@@ -3,7 +3,7 @@ import localFont from 'next/font/local';
 import './globals.css';
 
 const recoleta = localFont({
-  src: '../../Public/fonts/fonnts.com-recoleta-medium.otf',
+  src: '../../public/fonts/fonnts.com-recoleta-medium.otf',
   variable: '--font-recoleta',
   display: 'swap',
 });
@@ -11,17 +11,17 @@ const recoleta = localFont({
 const haffer = localFont({
   src: [
     {
-      path: '../../Public/haffer-font-family/Haffer-TRIAL-Regular.otf',
+      path: '../../public/haffer-font-family/Haffer-TRIAL-Regular.otf',
       weight: '400',
       style: 'normal',
     },
     {
-      path: '../../Public/haffer-font-family/Haffer-TRIAL-Medium.otf',
+      path: '../../public/haffer-font-family/Haffer-TRIAL-Medium.otf',
       weight: '500',
       style: 'normal',
     },
     {
-      path: '../../Public/haffer-font-family/Haffer-TRIAL-Bold.otf',
+      path: '../../public/haffer-font-family/Haffer-TRIAL-Bold.otf',
       weight: '700',
       style: 'normal',
     },
@@ -33,7 +33,7 @@ const haffer = localFont({
 const hafferXHMono = localFont({
   src: [
     {
-      path: '../../Public/haffer-font-family/HafferXHMono-TRIAL-Medium.otf',
+      path: '../../public/haffer-font-family/HafferXHMono-TRIAL-Medium.otf',
       weight: '500',
       style: 'normal',
     },
