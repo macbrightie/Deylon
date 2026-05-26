@@ -28,24 +28,24 @@ export function SiteFooter() {
 
       {/* ── Dark footer card with 10% margin, top rounded corners, color #1b1b1b ── */}
       <div className="w-full bg-white mt-auto">
-        <footer className="w-[80%] mx-auto bg-[#1b1b1b] text-white pt-16 pb-12 px-8 rounded-t-[32px] rounded-b-none mb-0 flex flex-col items-center">
-          {/* Content wrapper taking up exactly 70% of the black container */}
-          <div className="w-[70%] max-w-[1000px] mx-auto text-center flex flex-col items-center">
+        <footer className="w-[calc(100%-24px)] md:w-[80%] mx-auto bg-[#1b1b1b] text-white pt-16 pb-12 px-6 md:px-8 rounded-t-[32px] rounded-b-none mb-0 flex flex-col items-center">
+          {/* Content wrapper */}
+          <div className="w-full md:w-[70%] max-w-[1000px] mx-auto text-center flex flex-col items-center">
             {/* Wordmark */}
             <p className="text-white font-serif text-[32px] mb-8 tracking-tight">
               Aven
             </p>
 
             {/* Discord CTA container containing a separate Join button */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-8 border border-white/10 rounded-full md:pl-8 px-4 md:pr-3 py-2 bg-[#161616]/40 mb-12 max-w-full">
-              <span className="text-[14px] md:text-[15px] font-serif text-white tracking-tight pr-2">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-8 border border-white/10 rounded-[24px] md:rounded-full md:pl-8 px-5 md:pr-3 py-5 md:py-2 bg-[#161616]/40 mb-12 w-[85%] md:w-auto">
+              <span className="text-[14px] md:text-[15px] font-serif text-white tracking-tight text-center md:text-left">
                 Get support from real people.
               </span>
               <a
                 href="https://discord.gg/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-5 py-2 border border-white/20 rounded-full text-[13px] font-sans text-white hover:bg-white/5 transition-all"
+                className="flex items-center justify-center gap-2 px-5 py-3 md:py-2 border border-white/20 rounded-full text-[13px] font-sans text-white hover:bg-white/5 transition-all w-full md:w-auto"
               >
                 <span>Join Discord community</span>
                 {/* Discord icon */}

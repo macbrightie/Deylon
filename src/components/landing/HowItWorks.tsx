@@ -51,11 +51,10 @@ export function HowItWorks() {
     <section
       id="how-it-works"
       ref={containerRef}
-      className="relative"
-      style={{ height: "280vh" }}
+      className="relative md:h-[280vh]"
     >
-      {/* Sticky viewport container — shortened to 85vh to allow the next section to start peeking early */}
-      <div className="sticky top-0 h-[85vh] w-full overflow-hidden bg-[#fdfdf8] flex flex-col">
+      {/* Sticky viewport container on desktop, normal flow on mobile */}
+      <div className="md:sticky md:top-0 min-h-screen md:h-[85vh] w-full md:overflow-hidden bg-[#fdfdf8] flex flex-col">
         {/* Section heading */}
         <div className="pt-20 pb-10 text-center flex-shrink-0 px-8">
           <h2 className="text-[32px] md:text-[52px] font-serif text-[#1a1a1a] leading-tight tracking-tight">
@@ -64,7 +63,7 @@ export function HowItWorks() {
         </div>
 
         {/* Cards grid — each card animates in as you scroll */}
-        <div className="flex-1 flex items-start justify-center gap-5 md:gap-7 px-8 md:px-16 pb-10 relative">
+        <div className="flex-1 flex flex-col md:flex-row items-center md:items-start justify-center gap-16 md:gap-7 px-8 md:px-16 pb-20 md:pb-10 relative">
           {steps.map((step, index) => (
             <StepCard
               key={step.id}
