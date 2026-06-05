@@ -196,7 +196,7 @@ function FlashCard({
     : 0;
 
   return (
-    <div className="flex-1 min-w-0 rounded-[16px] bg-[#f0ede6] relative overflow-hidden h-[430px] transition-all duration-500 shadow-sm border border-black/5 flex flex-col justify-between">
+    <div className="w-full max-w-[280px] flex-shrink-0 rounded-[16px] bg-[#f0ede6] relative overflow-hidden h-[430px] transition-all duration-500 shadow-sm border border-black/5 flex flex-col justify-between">
       
       {/* Front Face Content: 24px (p-6) padding all around */}
       <div className={`absolute inset-0 p-6 flex flex-col justify-between transition-opacity duration-300 z-10 ${activeFace !== 'front' ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
@@ -784,6 +784,22 @@ function SettingsModal({
 export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('Grid');
   const [activePage, setActivePage] = useState(1);
+  const [cardsPerPage, setCardsPerPage] = useState(3);
+
+  useEffect(() => {
+    const updateCardsPerPage = () => {
+      const width = window.innerWidth;
+      if (width >= 1500) setCardsPerPage(5);
+      else if (width >= 1200) setCardsPerPage(4);
+      else if (width >= 900) setCardsPerPage(3);
+      else if (width >= 600) setCardsPerPage(2);
+      else setCardsPerPage(1);
+    };
+    
+    updateCardsPerPage();
+    window.addEventListener('resize', updateCardsPerPage);
+    return () => window.removeEventListener('resize', updateCardsPerPage);
+  }, []);
 
   // Dynamic Modals States
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -998,61 +1014,44 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="flex gap-4 px-[1.5%]">
-            {(() => {
-              const day1 = (activePage - 1) * 3 + 1;
-              const day2 = (activePage - 1) * 3 + 2;
-              const day3 = (activePage - 1) * 3 + 3;
-
-              const card1 = getCardForDay(day1);
-              const card2 = getCardForDay(day2);
-              const card3 = getCardForDay(day3);
-
+          <div className="flex flex-wrap gap-4 px-[1.5%]">
+            {Array.from({ length: cardsPerPage }).map((_, i) => {
+              const dayNum = (activePage - 1) * cardsPerPage + i + 1;
+              if (dayNum > 21) return null; // Assuming 21-day plan
+              const card = getCardForDay(dayNum);
               return (
-                <>
-                  <FlashCard
-                    cardId={card1?.id}
-                    dayNumber={day1}
-                    taskText={card1?.task ?? "Relax and reflect on your goal."}
-                    status={card1?.status ?? 'pending'}
-                    label={`Day ${day1} Move`}
-                    onStatusChange={handleStatusChange}
-                  />
-                  <FlashCard
-                    cardId={card2?.id}
-                    dayNumber={day2}
-                    taskText={card2?.task ?? "Relax and reflect on your goal."}
-                    status={card2?.status ?? 'pending'}
-                    label={`Day ${day2} Move`}
-                    onStatusChange={handleStatusChange}
-                  />
-                  <FlashCard
-                    cardId={card3?.id}
-                    dayNumber={day3}
-                    taskText={card3?.task ?? "Relax and reflect on your goal."}
-                    status={card3?.status ?? 'pending'}
-                    label={`Day ${day3} Move`}
-                    onStatusChange={handleStatusChange}
-                  />
-                </>
+                <FlashCard
+                  key={dayNum}
+                  cardId={card?.id}
+                  dayNumber={dayNum}
+                  taskText={card?.task ?? "Relax and reflect on your goal."}
+                  status={card?.status ?? 'pending'}
+                  label={`Day ${dayNum} Move`}
+                  onStatusChange={handleStatusChange}
+                />
               );
-            })()}
+            })}
           </div>
 
-          <div className="flex items-center gap-2 mt-5 px-[1.5%]">
-            {[1,2,3,4,5,6,7].map((n) => (
-              <button
-                key={n}
-                onClick={() => setActivePage(n)}
-                className={`w-10 h-10 rounded-[8px] text-[13px] font-sans font-medium transition-colors ${
-                  activePage === n
-                    ? 'bg-[#1a1a1a] text-white'
-                    : 'bg-[#FBFAFA] text-[#4F4E55] border border-black/5 hover:bg-[#f0ede6]'
-                }`}
-              >
-                {n}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 mt-5 px-[1.5%] flex-wrap">
+            {Array.from({ length: Math.ceil(21 / cardsPerPage) }).map((_, i) => {
+              const n = i + 1;
+              return (
+                <button
+                  key={n}
+                  onClick={() => {
+                    setActivePage(n);
+                  }}
+                  className={`w-10 h-10 rounded-[8px] text-[13px] font-sans font-medium transition-colors ${
+                    activePage === n
+                      ? 'bg-[#1a1a1a] text-white'
+                      : 'bg-[#FBFAFA] text-[#4F4E55] border border-black/5 hover:bg-[#f0ede6]'
+                  }`}
+                >
+                  {n}
+                </button>
+              );
+            })}
           </div>
 
           <div className="mt-5 px-[1.5%]">
