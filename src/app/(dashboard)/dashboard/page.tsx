@@ -998,7 +998,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="flex gap-4 px-[6%]">
+          <div className="flex gap-4 px-[1.5%]">
             {(() => {
               const day1 = (activePage - 1) * 3 + 1;
               const day2 = (activePage - 1) * 3 + 2;
@@ -1039,7 +1039,7 @@ export default function DashboardPage() {
             })()}
           </div>
 
-          <div className="flex items-center gap-2 mt-5 px-[6%]">
+          <div className="flex items-center gap-2 mt-5 px-[1.5%]">
             {[1,2,3,4,5,6,7].map((n) => (
               <button
                 key={n}
@@ -1055,8 +1055,7 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          {/* Challenge copy - sharing the same px-[6%] line alignment */}
-          <div className="mt-5 px-[6%]">
+          <div className="mt-5 px-[1.5%]">
             <h2 className="text-[#1a1a1a] text-[24px] font-sans font-medium leading-snug">
               At the end of this 21 days you&apos;d be able to...
             </h2>
