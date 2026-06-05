@@ -541,6 +541,17 @@ function ProfileModal({ isOpen, onClose, displayName, onSave, username }: Profil
     onClose();
   };
 
+  const handleLogout = async () => {
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      window.location.href = '/';
+    } catch (err) {
+      console.error('[Logout Error]:', err);
+      window.location.href = '/';
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
@@ -601,9 +612,22 @@ function ProfileModal({ isOpen, onClose, displayName, onSave, username }: Profil
           </div>
         </div>
 
-        <p className="text-[12px] font-sans text-[#6f6f77] leading-relaxed mb-8 text-center px-4 select-none">
+        <p className="text-[12px] font-sans text-[#6f6f77] leading-relaxed mb-4 text-center px-4 select-none">
           Your profile helps us relate with you personally.
         </p>
+
+        {/* Logout Button */}
+        <button 
+          onClick={handleLogout}
+          className="w-full mb-8 py-3 rounded-[12px] border border-red-500/10 hover:bg-red-500/5 active:scale-[0.98] text-red-600 text-[14px] font-sans font-medium transition-all flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          Log out
+        </button>
 
         {/* Action Buttons */}
         <div className="w-full flex gap-3">
