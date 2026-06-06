@@ -1135,6 +1135,7 @@ function ProfileModal({ isOpen, onClose, displayName, onSave, username, userId }
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  defaultTab?: 'general' | 'privacy';
   telegramConnected: boolean;
   onToggleTelegram: () => void;
   whatsappConnected: boolean;
@@ -1148,6 +1149,7 @@ interface SettingsModalProps {
 function SettingsModal({
   isOpen,
   onClose,
+  defaultTab = 'general',
   telegramConnected,
   onToggleTelegram,
   whatsappConnected,
@@ -1157,21 +1159,21 @@ function SettingsModal({
   onExportData,
   onResetAccount
 }: SettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<'general' | 'privacy'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'privacy'>(defaultTab);
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [publicProfile, setPublicProfile] = useState(true);
   const [shareData, setShareData] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setActiveTab('general');
+      setActiveTab(defaultTab);
     }
-  }, [isOpen]);
+  }, [isOpen, defaultTab]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="p-0 max-w-[760px] h-[520px] overflow-hidden flex flex-row">
-        <Tabs defaultValue="general" className="flex flex-row w-full h-full">
+        <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as any)} className="flex flex-row w-full h-full">
           {/* Left Sidebar Pane */}
           <div className="w-[192px] bg-[#ECE8E2] pt-20 pb-6 pl-6 pr-4 flex flex-col justify-between border-r border-black/5">
             <TabsList className="bg-transparent border-0 p-0">
@@ -1387,6 +1389,7 @@ export default function DashboardPage() {
   // Dynamic Modals States
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [settingsDefaultTab, setSettingsDefaultTab] = useState<'general' | 'privacy'>('general');
   const [showGoalsDrawer, setShowGoalsDrawer] = useState(false);
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [showRoadmap, setShowRoadmap] = useState(false);
@@ -1429,7 +1432,6 @@ export default function DashboardPage() {
         }
         setUser(authUser);
 
-        // Load avatar from localStorage
         const savedPhoto = localStorage.getItem(`aven_avatar_${authUser.id}`);
         if (savedPhoto) {
           setProfilePhoto(savedPhoto);
@@ -1448,8 +1450,17 @@ export default function DashboardPage() {
           .eq('id', authUser.id)
           .maybeSingle();
 
-        const dbName = userProfile?.display_name || authUser.user_metadata?.display_name || cachedName || userProfile?.email?.split('@')[0] || authUser.email?.split('@')[0] || 'You';
-        const dbUsername = userProfile?.username || authUser.user_metadata?.username || cachedUsername || '';
+        console.log('[DEBUG-load] authUser.id:', authUser.id);
+        console.log('[DEBUG-load] cachedName:', cachedName);
+        console.log('[DEBUG-load] cachedUsername:', cachedUsername);
+        console.log('[DEBUG-load] userProfile:', userProfile);
+        console.log('[DEBUG-load] authUser.user_metadata:', authUser?.user_metadata);
+
+        const dbName = userProfile?.display_name || authUser?.user_metadata?.display_name || cachedName || userProfile?.email?.split('@')[0] || authUser?.email?.split('@')[0] || 'You';
+        const dbUsername = userProfile?.username || authUser?.user_metadata?.username || cachedUsername || '';
+        console.log('[DEBUG-load] resolved dbName:', dbName);
+        console.log('[DEBUG-load] resolved dbUsername:', dbUsername);
+
         setProfileName(dbName);
         setProfileUsername(dbUsername);
         
@@ -1518,6 +1529,7 @@ export default function DashboardPage() {
   }, []);
 
   const handleSaveProfile = async (name: string, username: string, photo: string | null) => {
+    console.log('[DEBUG-save] Inputs - name:', name, 'username:', username);
     setProfileName(name);
     setProfileUsername(username);
     if (photo) {
@@ -1528,16 +1540,18 @@ export default function DashboardPage() {
       // Always persist to localStorage first so refresh always restores the correct name
       localStorage.setItem(`aven_display_name_${user.id}`, name);
       localStorage.setItem(`aven_username_${user.id}`, username);
+      console.log('[DEBUG-save] Saved to localStorage for user:', user.id);
 
       const supabase = createClient();
       try {
         // 1. Update auth metadata so it is guaranteed to persist in Supabase Auth DB
-        await supabase.auth.updateUser({
+        const authRes = await supabase.auth.updateUser({
           data: {
             display_name: name,
             username: username
           }
         });
+        console.log('[DEBUG-save] auth update result:', authRes);
 
         // 2. Also try updating users table (will fail gracefully if columns don't exist)
         const { error } = await supabase
@@ -1731,7 +1745,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <DashboardNav 
-        onOpenSettings={() => setShowSettingsModal(true)}
+        onOpenSettings={() => { setSettingsDefaultTab('general'); setShowSettingsModal(true); }}
         onOpenProfile={() => setShowProfileModal(true)}
         telegramConnected={telegramConnected}
         onToggleTelegram={handleToggleTelegram}
@@ -1871,7 +1885,16 @@ export default function DashboardPage() {
         <div className="flex items-center gap-4">
           <span>© Aven 2026</span>
           <span className="text-[#1a1a1a]/15">·</span>
-          <a href="#" className="hover:text-[#1a1a1a]/55 transition-colors">Privacy.</a>
+          <button 
+            onClick={(e) => {
+              e.preventDefault();
+              setSettingsDefaultTab('privacy');
+              setShowSettingsModal(true);
+            }}
+            className="hover:text-[#1a1a1a]/55 transition-colors text-left font-sans outline-none"
+          >
+            Privacy.
+          </button>
         </div>
         <div className="flex items-center gap-4">
           <a href="#" aria-label="Instagram" className="hover:opacity-100 transition-opacity">
@@ -1905,6 +1928,7 @@ export default function DashboardPage() {
       <SettingsModal 
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
+        defaultTab={settingsDefaultTab}
         telegramConnected={telegramConnected}
         onToggleTelegram={handleToggleTelegram}
         whatsappConnected={whatsappConnected}
