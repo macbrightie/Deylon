@@ -1763,7 +1763,7 @@ export default function DashboardPage() {
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-5 mt-2 mb-7">
           <div>
             <h1 className="font-sans text-[36px] md:text-[48px] leading-tight text-[#1a1a1a] tracking-[-0.03em]">
-              Welcome <span className="font-bold">{firstName}.</span>
+              Hey <span className="font-bold">{profileUsername || firstName}.</span>
             </h1>
             <p className="font-sans text-[20px] md:text-[24px] font-medium text-[#4e4e55] leading-relaxed mt-2 tracking-tight max-w-3xl">
               {plan?.plan_data?.motivational_anchor || 'Start building the dream.'}
