@@ -1,8 +1,11 @@
 'use client';
 
 import Image from 'next/image';
+import { useState } from 'react';
+import { PrivacyModal } from '@/components/ui/PrivacyModal';
 
 export function SiteFooter() {
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   return (
     <>
       {/* ── CTA section (white bg above the dark footer card) ───────────── */}
@@ -65,9 +68,15 @@ export function SiteFooter() {
               <div className="flex items-center gap-4">
                 <span>© Aven 2026</span>
                 <span className="text-white/20">|</span>
-                <a href="#" className="hover:text-white/60 transition-colors">
+                <button 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowPrivacyModal(true);
+                  }}
+                  className="hover:text-white/60 transition-colors outline-none cursor-pointer"
+                >
                   Privacy.
-                </a>
+                </button>
               </div>
 
               {/* Social icons */}
@@ -97,6 +106,11 @@ export function SiteFooter() {
           </div>
         </footer>
       </div>
+
+      <PrivacyModal 
+        isOpen={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
+      />
     </>
   );
 }

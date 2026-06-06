@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/Button';
 import { Label } from '@/components/ui/label';
+import { PrivacyModal } from '@/components/ui/PrivacyModal';
  
 type ViewMode = 'Grid' | 'Swipe';
  
@@ -375,14 +376,19 @@ const HABIT_DATA = [
 ];
 
 function HabitGrid({ dailyCards, filter, onFilterChange }: { dailyCards: any[]; filter: 'overall' | 'habit'; onFilterChange: (f: 'overall' | 'habit') => void }) {
-  // Dynamically calculate proper calendar month names starting from current month
-  const today = new Date();
+  const [currentMonth, setCurrentMonth] = useState<number>(5); // default to June (5)
+  
+  useEffect(() => {
+    // Dynamically align calendar month names starting from the actual current month of the year
+    setCurrentMonth(new Date().getMonth());
+  }, []);
+
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   
-  // Create sequential months array starting from current - 2 to future + 9
+  // Create sequential months array starting from current month (i = 0 to 11)
   const months: string[] = [];
-  for (let i = -2; i <= 9; i++) {
-    months.push(monthNames[(today.getMonth() + i + 12) % 12]);
+  for (let i = 0; i < 12; i++) {
+    months.push(monthNames[(currentMonth + i) % 12]);
   }
 
   // Map each of the 12 months to column offsets (spanning 4 to 5 weeks/columns per month)
@@ -1393,6 +1399,7 @@ export default function DashboardPage() {
   const [showGoalsDrawer, setShowGoalsDrawer] = useState(false);
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [showRoadmap, setShowRoadmap] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   // Profile Form States
   const [profileName, setProfileName] = useState('Bright Mac');
@@ -1888,8 +1895,7 @@ export default function DashboardPage() {
           <button 
             onClick={(e) => {
               e.preventDefault();
-              setSettingsDefaultTab('privacy');
-              setShowSettingsModal(true);
+              setShowPrivacyModal(true);
             }}
             className="hover:text-[#1a1a1a]/55 transition-colors text-left font-sans outline-none"
           >
@@ -1960,6 +1966,11 @@ export default function DashboardPage() {
         onClose={() => setShowRoadmap(false)}
         plan={plan}
         dailyCards={cards}
+      />
+
+      <PrivacyModal 
+        isOpen={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
       />
     </div>
   );
