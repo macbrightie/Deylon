@@ -20,7 +20,7 @@ export function decodeSessionData<T = Record<string, unknown>>(
  * Stores onboarding conversation ID in sessionStorage so it survives
  * the magic link auth redirect flow.
  */
-export const SESSION_KEY = 'aven_conversation_id';
+export const SESSION_KEY = 'daylon_conversation_id';
 
 export function storeConversationId(conversationId: string): void {
   if (typeof window !== 'undefined') {

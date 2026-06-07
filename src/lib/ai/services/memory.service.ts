@@ -50,7 +50,7 @@ export class MemoryService {
     // Grab the last 5 messages to extract context
     const lastFive = messages.slice(-5);
     const lastFiveFormatted = lastFive
-      .map((m: any) => `${m.role === 'aven' || m.role === 'assistant' ? 'Aven' : 'User'}: ${m.content}`)
+      .map((m: any) => `${m.role === 'daylon' || m.role === 'assistant' ? 'Daylon' : 'User'}: ${m.content}`)
       .join('\n');
 
     // 2. Fetch existing memories to present to the extraction engine as context

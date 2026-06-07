@@ -18,13 +18,26 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 async function inspect() {
   console.log('--- DATABASE INSPECTOR ---');
   
-  // 1. Check users
+  // 1. Check users in public.users table
   const { data: users, error: usersErr } = await supabase.from('users').select('*');
   if (usersErr) {
     console.error('Error fetching users:', usersErr);
   } else {
     console.log(`\nUsers count: ${users?.length || 0}`);
     console.log(users);
+  }
+
+  // 1b. Check auth.users metadata
+  const { data: authUsers, error: authUsersErr } = await supabase.auth.admin.listUsers();
+  if (authUsersErr) {
+    console.error('Error listing auth users:', authUsersErr);
+  } else {
+    console.log(`\nAuth Users count: ${authUsers?.users?.length || 0}`);
+    console.log(authUsers?.users.map(u => ({
+      id: u.id,
+      email: u.email,
+      user_metadata: u.user_metadata
+    })));
   }
 
   // 2. Check conversations
@@ -65,3 +78,4 @@ async function inspect() {
 }
 
 inspect().catch(console.error);
+

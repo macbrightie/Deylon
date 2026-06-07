@@ -74,7 +74,7 @@ export function Navbar() {
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2">
               <div className="w-5 h-5 bg-[#104d3b] rounded-[999px]" />
-              <span className="font-sans font-bold text-2xl tracking-tight text-white">aven</span>
+              <span className="font-sans font-bold text-2xl tracking-tight text-white">daylon</span>
             </Link>
 
             <div className="hidden md:flex items-center gap-8 ml-4">
@@ -82,7 +82,7 @@ export function Navbar() {
                 href="#how-it-works" 
                 className="text-sm font-medium text-white/90 hover:text-white transition-colors"
               >
-                Hows aven different?
+                Hows daylon different?
               </Link>
               <Link 
                 href="#pricing" 

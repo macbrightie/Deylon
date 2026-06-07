@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 6. Generate Aven's coaching response
+    // 6. Generate Daylon's coaching response
     const reply = await DailyChatService.chat(supabase, user.id, conversationId, sprintDay);
 
     if (!reply) {
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 7. Save Aven's response to the conversation database
+    // 7. Save Daylon's response to the conversation database
     const finalMessages = [
       ...updatedMessages,
       { role: 'assistant', content: reply }

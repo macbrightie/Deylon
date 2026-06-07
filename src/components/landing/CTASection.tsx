@@ -14,7 +14,7 @@ export function CTASection() {
             Ready to see how your life could be different?
           </h2>
           <p className="text-white/60 text-lg md:text-xl font-sans">
-            Join the hundreds of people who are already building a clearer, more intentional path with Aven.
+            Join the hundreds of people who are already building a clearer, more intentional path with Daylon.
           </p>
         </div>
 

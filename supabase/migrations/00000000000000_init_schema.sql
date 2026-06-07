@@ -1,5 +1,5 @@
 -- ============================================================
--- Aven Database Schema
+-- Daylon Database Schema
 -- Migration: 00000000000000_init_schema.sql
 -- Apply via: Supabase Dashboard → SQL Editor, or supabase db push
 -- ============================================================

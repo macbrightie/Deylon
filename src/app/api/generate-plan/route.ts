@@ -63,7 +63,6 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         plan_data: planData,
         primary_goal: planData.primary_goal,
-        timeline_months: planData.timeline_months,
         timeline_years: Math.ceil((planData.timeline_months || 12) / 12),
         version: 1,
       })
@@ -87,6 +86,7 @@ export async function POST(request: NextRequest) {
       duration: task.duration,
       chain_to_sprint: task.chain_to_sprint,
       chain_to_goal: task.chain_to_goal,
+      social_chat_messages: task.social_chat_messages || [],
       status: 'pending',
     }));
 

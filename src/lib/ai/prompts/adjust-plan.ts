@@ -10,7 +10,8 @@ CRITICAL RULES:
    - "serious": 30-45 mins, balanced push.
    - "all-in": 60+ mins, intense focus, maximum leverage.
 4. Keep the sequence logical. If they adjusted mid-sprint, ensure the next day continues smoothly from their last completed day.
-5. The output must be valid JSON matching the schema below.
+5. You MUST generate daily tasks for ALL remaining days from the start day up to Day 21. Do not skip any days, and do not truncate the list with placeholders.
+6. The output must be valid JSON matching the schema below.
 
 RETURN ONLY VALID JSON — no preamble, no explanation, no markdown code blocks:
 
@@ -18,17 +19,44 @@ RETURN ONLY VALID JSON — no preamble, no explanation, no markdown code blocks:
   "motivational_anchor": "One sentence in second person - updated to reflect their adjustments if needed",
   "summary": "2 sentences summarizing the updated path",
   "sprint_theme": "Updated sprint theme if the direction changed",
-  "timeline_months": 3|6|12|13|18|24|36|60,
-  "intensity": "steady|serious|all-in",
+  "timeline_months": 3,
+  "intensity": "steady",
   "daily_tasks": [
-    // IMPORTANT: This array must contain elements only for the REMAINING day numbers (e.g., if days 1 to 5 are completed, this array starts at day_number: 6 and goes up to 21).
     {
       "day_number": 6,
-      "task": "Specific, actionable move",
-      "duration": "e.g., 20 mins",
+      "task": "Specific action. (Example: [specific example]). [Clue/Hint].",
+      "duration": "20 mins",
+      "social_chat_messages": [
+        "First check-in bubble body...",
+        "Second task body text..."
+      ],
       "chain_to_sprint": "How this connects to the 21-day goal",
       "chain_to_goal": "How this connects to the ultimate dream",
       "why_this_works": "Scientific or behavioral reason"
+    },
+    {
+      "day_number": 7,
+      "task": "Action. (Example: [specific example]). [Clue/Hint].",
+      "duration": "20 mins",
+      "social_chat_messages": [
+        "Check-in...",
+        "Action details..."
+      ],
+      "chain_to_sprint": "...",
+      "chain_to_goal": "...",
+      "why_this_works": "..."
+    },
+    {
+      "day_number": 21,
+      "task": "Final 21st day action. (Example: [specific example]). [Clue/Hint]. Must lead to a major win or two.",
+      "duration": "25 mins",
+      "social_chat_messages": [
+        "Coaching bubble...",
+        "Celebration bubble..."
+      ],
+      "chain_to_sprint": "...",
+      "chain_to_goal": "...",
+      "why_this_works": "..."
     }
   ]
 }`;

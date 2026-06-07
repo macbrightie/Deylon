@@ -1,4 +1,5 @@
 'use client';
+import { GodModeWidget } from '@/components/admin/GodModeWidget';
  
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
@@ -53,7 +54,7 @@ function DashboardNav({
         <div className="w-6 h-6 rounded-full bg-[#104d3b] flex items-center justify-center">
           <div className="w-2.5 h-2.5 rounded-full bg-white" />
         </div>
-        <span className="font-sans text-[16px] font-medium text-[#1a1a1a] tracking-tight">aven</span>
+        <span className="font-sans text-[16px] font-medium text-[#1a1a1a] tracking-tight">daylon</span>
       </Link>
       {/* Right side */}
       <div className="flex items-center gap-3">
@@ -142,6 +143,71 @@ function IconsaxChart({ bg = '#2D766F' }: { bg?: string }) {
   );
 }
 
+// ─── Translations Dictionary & Helper ──────────────────────────────────────────
+const TRANSLATIONS: Record<string, Record<string, string>> = {
+  English: {
+    hey: 'Hey',
+    moves_checked: 'Moves Checked',
+    specific_habits: 'Specific Habits',
+    habit_grid_title: 'Your habit activity',
+    overall_progress_desc: 'See and track how much work you have put in. Blue squares show days where you completed all daily moves.',
+    specific_habits_desc: 'Track your consistency on core habits. Green squares represent active practice days scheduled for your core habits.',
+    here_are_move_cards: 'Here are your move cards',
+    update_goals: 'Update Goals',
+    adjust_overall_plan: 'Adjust overall plan',
+    rest_practice_pending: 'Rest / Practice Pending',
+    daily_move_completed: 'Daily Move Completed',
+    core_habit_scheduled: 'Core Habit Scheduled',
+    core_habits_checklist: 'Core Habits Checklist:',
+    goals_pending: 'Goals\nPending',
+    longest_streak: 'Longest\nstreak',
+    dream_duration: 'Dream\nduration',
+    upgrade_pro: 'Upgrade to Pro',
+    general_settings: 'General Settings',
+    connect_telegram: 'Connect Telegram',
+    connect_whatsapp: 'Connect WhatsApp',
+    language: 'Language',
+    connected: 'Connected',
+    your_progress: 'your progress',
+    amazing_work: 'Amazing work!\nYou nailed it.',
+    keep_pushing: 'Keep pushing\nyour limits!',
+    back: 'Back',
+  },
+  French: {
+    hey: 'Salut',
+    moves_checked: 'Mouvements Validés',
+    specific_habits: 'Habitudes Spécifiques',
+    habit_grid_title: "Votre activité d'habitudes",
+    overall_progress_desc: 'Visualisez et suivez le travail accompli. Les carrés bleus indiquent les jours où vous avez complété toutes les actions.',
+    specific_habits_desc: 'Suivez votre régularité sur les habitudes clés. Les carrés verts représentent les jours de pratique active prévus.',
+    here_are_move_cards: "Voici vos cartes d'actions",
+    update_goals: 'Mettre à jour les objectifs',
+    adjust_overall_plan: 'Ajuster le plan global',
+    rest_practice_pending: 'Repos / Pratique en attente',
+    daily_move_completed: 'Action quotidienne validée',
+    core_habit_scheduled: 'Habitude planifiée',
+    core_habits_checklist: 'Liste des Habitudes :',
+    goals_pending: 'Objectifs\nen attente',
+    longest_streak: 'Série la plus\nlongue',
+    dream_duration: 'Durée du\nrêve',
+    upgrade_pro: 'Passer à Pro',
+    general_settings: 'Paramètres Généraux',
+    connect_telegram: 'Connecter Telegram',
+    connect_whatsapp: 'Connecter WhatsApp',
+    language: 'Langue',
+    connected: 'Connecté',
+    your_progress: 'votre progression',
+    amazing_work: 'Excellent travail !\nVous avez réussi.',
+    keep_pushing: 'Repoussez\nvos limites !',
+    back: 'Retour',
+  }
+};
+
+const t = (key: string, lang: string) => {
+  const dict = TRANSLATIONS[lang] || TRANSLATIONS.English;
+  return dict[key] || key;
+};
+
 // ─── Flash Card ───────────────────────────────────────────────────────────────
 interface FlashCardProps {
   cardId?: string;
@@ -151,7 +217,9 @@ interface FlashCardProps {
   isDate?: boolean;
   label?: string;
   onStatusChange?: (cardId: string, status: 'pending' | 'done' | 'adjusted' | 'partial') => Promise<void>;
+  langKey?: string;
 }
+
 
 function FlashCard({ 
   cardId, 
@@ -160,7 +228,8 @@ function FlashCard({
   status, 
   isDate = false, 
   label, 
-  onStatusChange 
+  onStatusChange,
+  langKey = 'English'
 }: FlashCardProps) {
   const [activeFace, setActiveFace] = useState<'front' | 'black' | 'analytics'>('front');
   const today = new Date();
@@ -180,9 +249,17 @@ function FlashCard({
     if (status === 'done') {
       setCheckedStates(new Array(sentences.length).fill(true));
     } else {
-      setCheckedStates(new Array(sentences.length).fill(false));
+      setCheckedStates((prev) => {
+        if (prev.length !== sentences.length) {
+          return new Array(sentences.length).fill(false);
+        }
+        if (prev.every(Boolean)) {
+          return new Array(sentences.length).fill(false);
+        }
+        return prev;
+      });
     }
-  }, [status, taskText]);
+  }, [status, taskText, sentences.length]);
 
   const toggleTask = async (idx: number, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -286,7 +363,7 @@ function FlashCard({
                         <div className="w-5 h-5 rounded-full border border-white/35 hover:border-white/70 transition-colors" />
                       )}
                     </div>
-                    <p className={`text-[11.5px] font-sans leading-[1.35] select-none transition-all duration-300 text-left ${
+                    <p className={`text-[13.5px] font-sans leading-[1.35] select-none transition-all duration-300 text-left ${
                       isChecked ? 'text-white/40 line-through' : 'text-white opacity-90'
                     }`}>
                       {sentence}
@@ -301,8 +378,18 @@ function FlashCard({
             )}
           </div>
 
-          {/* Bottom spacer */}
-          <div className="h-2" />
+          {/* Bottom Action Bar */}
+          <div className="flex gap-2 mt-auto pt-4 border-t border-white/5">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveFace('front');
+              }}
+              className="w-full py-2.5 rounded-[12px] bg-white/10 hover:bg-white/15 text-white text-[13px] font-sans font-medium transition-colors cursor-pointer text-center outline-none"
+            >
+              {t('back', langKey)}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -329,26 +416,29 @@ function FlashCard({
 
           <div className="flex-1" />
 
-          {/* Bottom Area (from analytics cards.png) */}
-          <div className="flex justify-between items-end w-full pb-2">
-            <div className="flex flex-col text-left">
+          {/* Bottom Area using two rows to prevent compression */}
+          <div className="flex flex-col gap-3.5 w-full pb-2 select-none text-left">
+            <div className="flex flex-col">
               <span className="text-white/45 text-[11px] font-sans tracking-widest uppercase font-semibold">
-                your progress
+                {t('your_progress', langKey)}
               </span>
-              <h4 className="text-[24px] font-sans font-bold leading-[1.2] text-white mt-1.5 whitespace-pre-line select-none">
-                {completionPercentage === 100 ? "Amazing work!\nYou nailed it." : "Keep pushing\nyour limits!"}
+              <h4 className="text-[18px] font-sans font-bold leading-[1.2] text-white mt-1 select-none whitespace-pre-line">
+                {completionPercentage === 100 
+                  ? t('amazing_work', langKey) 
+                  : t('keep_pushing', langKey)}
               </h4>
             </div>
 
-            {/* Bottom-Right Percentage & Outline circular button */}
-            <div className="flex items-end gap-2.5">
-              <span className="text-[64px] font-sans font-light leading-none text-white select-none">{completionPercentage}%</span>
+            <div className="flex justify-between items-center w-full border-t border-white/10 pt-3.5">
+              <span className="text-[48px] font-sans font-light leading-none text-white select-none">
+                {completionPercentage}%
+              </span>
               <button
                 onClick={resetCard}
-                className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center hover:bg-white/5 active:scale-95 transition-all flex-shrink-0 mb-1.5"
+                className="w-9 h-9 rounded-full border border-white/20 flex items-center justify-center hover:bg-white/5 active:scale-95 transition-all flex-shrink-0"
                 title="Reset card"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
                   <path d="M19 12H5M12 19l-7-7 7-7"/>
                 </svg>
               </button>
@@ -375,8 +465,33 @@ const HABIT_DATA = [
   [0,1,0,0,0,0,0,0,0,0,0,0,0, 0,1,0,0,0,0,0,0,0,0,0,0,0, 0,1,0,0,0,0,0,0,0,0,0,0,0],
 ];
 
-function HabitGrid({ dailyCards, filter, onFilterChange }: { dailyCards: any[]; filter: 'overall' | 'habit'; onFilterChange: (f: 'overall' | 'habit') => void }) {
+function HabitGrid({ 
+  dailyCards, 
+  filter, 
+  onFilterChange,
+  habits = [],
+  langKey = 'English'
+}: { 
+  dailyCards: any[]; 
+  filter: 'overall' | 'habit'; 
+  onFilterChange: (f: 'overall' | 'habit') => void;
+  habits?: any[];
+  langKey?: string;
+}) {
   const [currentMonth, setCurrentMonth] = useState<number>(5); // default to June (5)
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedHabitIndex, setSelectedHabitIndex] = useState<number | null>(0);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
   
   useEffect(() => {
     // Dynamically align calendar month names starting from the actual current month of the year
@@ -408,24 +523,58 @@ function HabitGrid({ dailyCards, filter, onFilterChange }: { dailyCards: any[]; 
   ];
 
   return (
-    <div className="bg-[#1a1a1a] rounded-[20px] px-6 pb-[24px] pt-[32px] flex flex-col gap-6 h-[520px] justify-between text-left">
+    <div className="bg-[#1a1a1a] rounded-[20px] px-6 pb-[24px] pt-[32px] flex flex-col gap-6 min-h-[520px] h-auto justify-between text-left">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
-          <h3 className="text-white text-[32px] font-normal font-sans leading-tight">Your habit activity</h3>
+          <h3 className="text-white text-[32px] font-normal font-sans leading-tight">
+            {t('habit_grid_title', langKey)}
+          </h3>
           <p className="text-[#B3B2B3] text-[16px] font-sans mt-2 leading-relaxed max-w-[480px]">
-            See and track how much work you have put in, and how much this dream means to you
+            {filter === 'overall' 
+              ? t('overall_progress_desc', langKey)
+              : t('specific_habits_desc', langKey)}
           </p>
         </div>
-        <div className="relative self-start md:self-auto flex-shrink-0">
-          <select 
-            value={filter}
-            onChange={(e) => onFilterChange(e.target.value as 'overall' | 'habit')}
-            className="px-4 py-2 rounded-[8px] bg-white/10 text-white text-[12.5px] font-sans border border-white/10 hover:bg-white/15 outline-none cursor-pointer"
+        <div ref={dropdownRef} className="relative self-start md:self-auto flex-shrink-0 z-40 select-none">
+          <button 
+            onClick={() => setIsOpen(!isOpen)}
+            className="flex items-center gap-1.5 pl-[8px] pr-[4px] py-[3px] rounded-[6px] bg-[#1a1a1a] hover:bg-[#2A2A2E] text-white text-[12px] font-sans font-medium border border-white/10 outline-none cursor-pointer transition-colors shadow-sm select-none"
           >
-            <option value="overall" className="bg-[#1a1a1a] text-white">Overall Progress</option>
-            <option value="habit" className="bg-[#1a1a1a] text-white">Specific Habits</option>
-          </select>
+            <span className="leading-none">
+              {filter === 'overall' ? t('moves_checked', langKey) : t('specific_habits', langKey)}
+            </span>
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="2" className={`opacity-60 transition-transform ${isOpen ? 'rotate-180' : ''}`}>
+              <path d="M1 1l4 4 4-4" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          
+          {isOpen && (
+            <div className="absolute right-0 mt-1.5 w-[160px] rounded-[8px] bg-[#1a1a1a] border border-white/10 shadow-lg py-1 z-50">
+              <button
+                onClick={() => {
+                  onFilterChange('overall');
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left px-3 py-1.5 text-[12.5px] font-sans transition-colors ${
+                  filter === 'overall' ? 'bg-white/10 text-white font-medium' : 'text-white/70 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {t('moves_checked', langKey)}
+              </button>
+              <button
+                onClick={() => {
+                  onFilterChange('habit');
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left px-3 py-1.5 text-[12.5px] font-sans transition-colors ${
+                  filter === 'habit' ? 'bg-white/10 text-white font-medium' : 'text-white/70 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {t('specific_habits', langKey)}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -457,8 +606,17 @@ function HabitGrid({ dailyCards, filter, onFilterChange }: { dailyCards: any[]; 
                   if (filter === 'overall') {
                     active = dayNum <= 21 && dailyCards.find((c) => c.day_number === dayNum)?.status === 'done';
                   } else {
-                    // Specific habit mock layout (e.g. daily code, writing, meditation task)
-                    active = dayNum <= 21 && (dayNum % 3 !== 0);
+                    if (selectedHabitIndex === null) {
+                      active = false;
+                    } else if (selectedHabitIndex === 0) {
+                      active = dayNum <= 21 && (dayNum % 7 !== 0);
+                    } else if (selectedHabitIndex === 1) {
+                      active = dayNum <= 21 && (dayNum % 7 === 2 || dayNum % 7 === 5);
+                    } else if (selectedHabitIndex === 2) {
+                      active = dayNum <= 21 && (dayNum % 7 === 1 || dayNum % 7 === 3 || dayNum % 7 === 6);
+                    } else {
+                      active = dayNum <= 21 && (dayNum % 2 !== 0);
+                    }
                   }
 
                   return (
@@ -497,6 +655,50 @@ function HabitGrid({ dailyCards, filter, onFilterChange }: { dailyCards: any[]; 
           </div>
         </div>
       </div>
+
+      {/* Legend & Core Habits */}
+      <div className="mt-2 pt-3 border-t border-white/10 flex flex-col gap-3">
+        <div className="flex items-center gap-4 text-[12px] font-sans text-white/50">
+          <div className="flex items-center gap-1.5">
+            <span className="w-3.5 h-3.5 rounded-[3px] flex-shrink-0" style={{ background: filter === 'overall' ? '#1559EF' : '#104D3B' }} />
+            <span>{filter === 'overall' ? t('daily_move_completed', langKey) : t('core_habit_scheduled', langKey)}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3.5 h-3.5 rounded-[3px] bg-white/15 flex-shrink-0" />
+            <span>{t('rest_practice_pending', langKey)}</span>
+          </div>
+        </div>
+
+        {filter === 'habit' && habits.length > 0 && (
+          <div className="flex flex-col gap-2 mt-1 select-none">
+            <span className="text-[12px] font-semibold text-[#B3B2B3] uppercase tracking-wider block">
+              {t('core_habits_checklist', langKey)}
+            </span>
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              {habits.map((h: any, idx: number) => {
+                const isChecked = selectedHabitIndex === idx;
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedHabitIndex(isChecked ? null : idx)}
+                    className="flex items-center gap-2 text-white text-[13px] font-sans hover:opacity-90 outline-none cursor-pointer"
+                  >
+                    <div className="w-4 h-4 rounded-[4px] border border-white/30 flex items-center justify-center bg-white/5 transition-colors">
+                      {isChecked && (
+                        <div className="w-2.5 h-2.5 rounded-[2px] bg-[#104D3B]" />
+                      )}
+                    </div>
+                    <span className={`font-medium ${isChecked ? 'text-white' : 'text-[#B3B2B3]'}`}>
+                      {h.habit}
+                    </span>
+                    {h.duration && <span className="text-white/40 text-[12px]">({h.duration})</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -533,18 +735,19 @@ function MapBanner({ onClick }: { onClick: () => void }) {
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 function StatCard({ value, unit, label, accent }: { value: string; unit?: string; label: string; accent?: boolean }) {
   return (
-    <div className={`rounded-[14px] px-5 pt-[48px] pb-[32px] flex flex-col justify-between h-[270px] ${accent ? 'bg-[#1559EF]' : 'bg-white border border-black/5'}`}>
-      <div className="flex items-baseline gap-1.5">
-        <span className={`text-[80px] font-sans font-light leading-none ${accent ? 'text-white' : 'text-black'}`}>{value}</span>
+    <div className={`rounded-[14px] px-5 py-4 md:pt-[48px] md:pb-[32px] flex flex-row md:flex-col items-center md:items-start justify-between h-auto md:h-[270px] ${accent ? 'bg-[#1559EF]' : 'bg-white border border-black/5'}`}>
+      <p className={`text-[15px] md:text-[16px] font-sans leading-[1.3] md:max-w-[120px] order-1 md:order-2 ${accent ? 'text-white/95' : 'text-[#4e4e55] md:text-black font-medium md:font-normal'}`}>
+        <span className="hidden md:inline whitespace-pre-line">{label}</span>
+        <span className="inline md:hidden">{label.replace('\n', ' ')}</span>
+      </p>
+      <div className="flex items-baseline gap-1.5 order-2 md:order-1 select-none">
+        <span className={`text-[32px] md:text-[80px] font-sans font-light leading-none ${accent ? 'text-white' : 'text-black font-semibold md:font-light'}`}>{value}</span>
         {unit && (
-          <span className={`text-[12px] font-sans font-normal uppercase tracking-widest ${accent ? 'text-white' : 'text-black'}`}>
+          <span className={`text-[10px] md:text-[12px] font-sans font-normal uppercase tracking-widest ${accent ? 'text-white/80' : 'text-[#8E8E93]'}`}>
             {unit}
           </span>
         )}
       </div>
-      <p className={`text-[16px] font-sans leading-[1.3] max-w-[120px] whitespace-pre-line ${accent ? 'text-white' : 'text-black'}`}>
-        {label}
-      </p>
     </div>
   );
 }
@@ -714,7 +917,7 @@ function AdjustPlanModal({ isOpen, onClose, currentIntensity, currentTimelineMon
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!changeDescription.trim()) {
-      alert("Please tell us what has changed in your life so Aven can adjust your plan.");
+      alert("Please tell us what has changed in your life so Daylon can adjust your plan.");
       return;
     }
     setLoading(true);
@@ -738,13 +941,13 @@ function AdjustPlanModal({ isOpen, onClose, currentIntensity, currentTimelineMon
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
             </svg>
-            <span className="text-[14px] font-sans font-medium text-black tracking-wide">Aven is rewriting your plan...</span>
+            <span className="text-[14px] font-sans font-medium text-black tracking-wide">Daylon is rewriting your plan...</span>
           </div>
         )}
 
         <DialogHeader className="p-8 pb-4">
           <DialogTitle>Adjust Overall Plan</DialogTitle>
-          <DialogDescription>Change your sprint intensity, timeline, or tell Aven what's changed in your life.</DialogDescription>
+          <DialogDescription>Change your sprint intensity, timeline, or tell Daylon what's changed in your life.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6 px-8 pb-2 text-left">
@@ -802,7 +1005,7 @@ function AdjustPlanModal({ isOpen, onClose, currentIntensity, currentTimelineMon
               className="w-full px-4 py-3 rounded-[12px] bg-[#ECE8E2] text-[#1a1a1a] text-[13.5px] font-sans border border-transparent outline-none focus:bg-white focus:border-black/10 focus:ring-1 focus:ring-black/10 transition-all shadow-inner placeholder-black/25 resize-none leading-relaxed"
             />
             <span className="text-[11px] font-sans text-[#6f6f77] mt-1.5 leading-relaxed">
-              ⚠️ Aven will preserve all completed cards and rewrite remaining tasks to fit your updated parameters.
+              ⚠️ Daylon will preserve all completed cards and rewrite remaining tasks to fit your updated parameters.
             </span>
           </div>
         </form>
@@ -827,6 +1030,7 @@ interface RoadmapOverlayProps {
 
 function RoadmapOverlay({ isOpen, onClose, plan, dailyCards }: RoadmapOverlayProps) {
   const [hoverNode, setHoverNode] = useState<number | null>(null);
+  const [lockedPhase, setLockedPhase] = useState<any | null>(null);
 
   if (!isOpen) return null;
 
@@ -874,7 +1078,7 @@ function RoadmapOverlay({ isOpen, onClose, plan, dailyCards }: RoadmapOverlayPro
           <div className="w-5 h-5 rounded-full bg-[#104d3b] flex items-center justify-center">
             <div className="w-2 h-2 rounded-full bg-white" />
           </div>
-          <span className="font-sans text-[15px] font-medium tracking-tight text-white/90">aven roadmap</span>
+          <span className="font-sans text-[15px] font-medium tracking-tight text-white/90">daylon roadmap</span>
         </div>
         <button 
           onClick={onClose}
@@ -908,16 +1112,30 @@ function RoadmapOverlay({ isOpen, onClose, plan, dailyCards }: RoadmapOverlayPro
                 className="relative z-10 flex flex-col items-center select-none cursor-pointer"
                 onMouseEnter={() => setHoverNode(phase.id)}
                 onMouseLeave={() => setHoverNode(null)}
-                onClick={() => setHoverNode(phase.id)}
+                onClick={() => {
+                  if (phase.id > 1) {
+                    setLockedPhase(phase);
+                  } else {
+                    setHoverNode(phase.id);
+                  }
+                }}
               >
                 <div 
-                  className={`w-14 h-14 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
+                  className={`w-14 h-14 rounded-full flex items-center justify-center border-2 transition-all duration-300 relative ${
                     isHovered 
                       ? 'border-[#1559EF] bg-[#1559EF] shadow-[0_0_20px_rgba(21,89,239,0.5)] scale-110' 
                       : 'border-white/20 bg-[#1e1e24] hover:border-white/60'
                   }`}
                 >
                   <span className="text-[14px] font-sans font-bold text-white">{phase.id}</span>
+                  {phase.id > 1 && (
+                    <div className="absolute -top-1 -right-1 bg-[#1559EF] text-white rounded-full p-1 border border-[#131316] w-5 h-5 flex items-center justify-center" title="Locked (Premium Feature)">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                      </svg>
+                    </div>
+                  )}
                 </div>
 
                 <h4 className="text-[13px] font-sans font-bold text-white mt-3 tracking-wide">{phase.title}</h4>
@@ -932,7 +1150,7 @@ function RoadmapOverlay({ isOpen, onClose, plan, dailyCards }: RoadmapOverlayPro
                 >
                   <div>
                     <span className="text-[9px] font-sans text-[#1559EF] uppercase tracking-widest font-bold">
-                      Phase {phase.id}
+                      Phase {phase.id} {phase.id > 1 && "(Premium)"}
                     </span>
                     <h5 className="text-[15px] font-sans font-bold text-white leading-tight mt-0.5">
                       {phase.key_focus}
@@ -957,6 +1175,47 @@ function RoadmapOverlay({ isOpen, onClose, plan, dailyCards }: RoadmapOverlayPro
           })}
         </div>
       </div>
+
+      {/* Premium Upgrade Modal */}
+      {lockedPhase && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[60] flex items-center justify-center p-4">
+          <div className="bg-[#1E1E22] border border-white/10 rounded-[24px] max-w-md w-full p-8 text-left shadow-2xl relative">
+            <button 
+              onClick={() => setLockedPhase(null)}
+              className="absolute top-4 right-4 text-white/50 hover:text-white"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+            <div className="w-12 h-12 rounded-full bg-[#1559EF]/10 flex items-center justify-center text-[#1559EF] mb-6">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+            <h3 className="text-2xl font-sans font-bold mb-2">Unlock Daylon Pro</h3>
+            <p className="text-[14px] text-white/70 leading-relaxed mb-6">
+              Phase {lockedPhase.id} ({lockedPhase.title}) is a premium feature. Lock in your relocation success and get personalized admissions guides, visa application templates, and live software engineering portfolio feedback tailored specifically for France.
+            </p>
+            <div className="flex flex-col gap-3">
+              <Link
+                href="/pro"
+                className="w-full py-3 bg-[#1559EF] hover:bg-[#3b7aff] text-white rounded-[12px] font-sans font-medium text-center transition-colors text-[14px]"
+              >
+                Upgrade now
+              </Link>
+              <button
+                onClick={() => setLockedPhase(null)}
+                className="w-full py-3 bg-white/5 hover:bg-white/10 text-white rounded-[12px] font-sans text-center transition-colors text-[14px]"
+              >
+                Maybe later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -982,7 +1241,7 @@ function ProfileModal({ isOpen, onClose, displayName, onSave, username, userId }
       setTempDisplayName(displayName);
       setTempUsername(username);
       if (userId) {
-        const savedPhoto = localStorage.getItem(`aven_avatar_${userId}`);
+        const savedPhoto = localStorage.getItem(`daylon_avatar_${userId}`);
         setProfilePhoto(savedPhoto);
       }
     }
@@ -1010,7 +1269,7 @@ function ProfileModal({ isOpen, onClose, displayName, onSave, username, userId }
         const base64String = reader.result as string;
         setProfilePhoto(base64String);
         if (userId) {
-          localStorage.setItem(`aven_avatar_${userId}`, base64String);
+          localStorage.setItem(`daylon_avatar_${userId}`, base64String);
         }
       };
       reader.readAsDataURL(file);
@@ -1165,45 +1424,49 @@ function SettingsModal({
   onExportData,
   onResetAccount
 }: SettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<'general' | 'privacy'>(defaultTab);
+  const [activeTab, setActiveTab] = useState<'general'>('general');
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
-  const [publicProfile, setPublicProfile] = useState(true);
-  const [shareData, setShareData] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setActiveTab(defaultTab);
+      setActiveTab('general');
     }
-  }, [isOpen, defaultTab]);
+  }, [isOpen]);
+
+  const langKey = activeLanguage === 'French' ? 'French' : 'English';
+  const t = (key: string, lang: string) => {
+    const dict: Record<string, Record<string, string>> = {
+      general_settings: { English: 'General Settings', French: 'Paramètres Généraux' },
+      connect_telegram: { English: 'Connect Telegram', French: 'Connecter Telegram' },
+      connect_whatsapp: { English: 'Connect WhatsApp', French: 'Connecter WhatsApp' },
+      connected: { English: 'Connected', French: 'Connecté' },
+      language: { English: 'Language', French: 'Langue' }
+    };
+    return dict[key]?.[lang] || key;
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="p-0 max-w-[760px] h-[520px] overflow-hidden flex flex-row">
+      <DialogContent className="p-0 max-w-[760px] w-[92vw] md:w-full h-[85vh] md:h-[520px] overflow-hidden flex flex-row rounded-[24px]">
         <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as any)} className="flex flex-row w-full h-full">
-          {/* Left Sidebar Pane */}
-          <div className="w-[192px] bg-[#ECE8E2] pt-20 pb-6 pl-6 pr-4 flex flex-col justify-between border-r border-black/5">
-            <TabsList className="bg-transparent border-0 p-0">
-              <TabsTrigger value="general">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          {/* Left Sidebar Pane - Hidden on Mobile */}
+          <div className="hidden md:flex w-[192px] bg-[#ECE8E2] pt-20 pb-6 pl-6 pr-4 flex-col justify-between border-r border-black/5">
+            <TabsList className="bg-transparent border-0 p-0 flex flex-col gap-1 items-start">
+              <TabsTrigger value="general" className="w-full justify-start text-[14px]">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
                   <circle cx="12" cy="12" r="3"></circle>
-                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                 </svg>
                 General
-              </TabsTrigger>
-              <TabsTrigger value="privacy">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                </svg>
-                Privacy
               </TabsTrigger>
             </TabsList>
           </div>
 
           {/* Right Content Pane */}
-          <div className="flex-1 pt-8 pb-6 px-8 flex flex-col overflow-y-auto">
-            <TabsContent value="general" className="flex flex-col h-full m-0 outline-none">
+          <div className="flex-1 pt-16 md:pt-8 pb-6 px-6 md:px-8 flex flex-col overflow-y-auto w-full h-full">
+            <TabsContent value="general" className="flex flex-col h-full m-0 outline-none w-full">
               <h4 className="font-sans font-medium text-[20px] text-[#1a1a1a] tracking-tight select-none mb-4 text-left">
-                General Settings
+                {t('general_settings', langKey)}
               </h4>
 
               {/* Telegram Bar */}
@@ -1222,34 +1485,44 @@ function SettingsModal({
                       </linearGradient>
                     </defs>
                   </svg>
-                  <span className="font-sans font-medium text-[14px]">Connect Telegram</span>
+                  <span className="font-sans font-medium text-[14px]">
+                    {t('connect_telegram', langKey)}
+                  </span>
                 </div>
                 <div>
                   {telegramConnected && (
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-[11px] font-sans font-medium">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#3CD070] shadow-glow" />
-                      Connected
+                      {t('connected', langKey)}
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* WhatsApp Bar */}
+              {/* WhatsApp Bar with Premium Upgrade Crown/Star Icon */}
               <div 
                 onClick={onToggleWhatsApp}
                 className="mt-3 flex items-center justify-between bg-[#1E1E22] hover:bg-[#2A2A2E] text-white pt-4 pb-4 px-4 rounded-[16px] cursor-pointer transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] shadow-sm select-none"
               >
                 <div className="flex items-center gap-3.5">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0 shadow-sm">
-                    <path d="M12.002 2C17.5248 2 22.002 6.47715 22.002 12C22.002 17.5228 17.5248 22 12.002 22C10.1681 22 8.44948 21.5064 6.97183 20.6447L2.00613 22L3.35809 17.0315C2.49591 15.5536 2.00195 13.8345 2.00195 12C2.00195 6.47715 6.4791 2 12.002 2ZM8.39329 7.30833C8.2639 7.31742 8.13704 7.34902 8.02154 7.40811C7.93489 7.45244 7.85445 7.51651 7.72806 7.63586C7.60871 7.74855 7.53954 7.84697 7.46666 7.94186C7.09696 8.4232 6.89826 9.01405 6.90195 9.62098C6.90396 10.1116 7.0314 10.5884 7.23266 11.0336C7.64079 11.9364 8.31385 12.8908 9.20291 13.7759C9.41647 13.9885 9.6257 14.2034 9.85131 14.402C10.9548 15.3736 12.2698 16.0742 13.6917 16.4482C13.6917 16.4482 14.2517 16.5342 14.2599 16.5347C14.4454 16.5447 14.6306 16.5313 14.8163 16.5218C15.1076 16.5068 15.392 16.428 15.6494 16.2909C15.8149 16.2028 15.8932 16.159 16.0321 16.0714C16.0321 16.0714 16.0747 16.0426 16.1569 15.9814C16.2919 15.8808 16.3753 15.81 16.4876 15.6934C16.5704 15.6074 16.6416 15.5058 16.6966 15.3913C16.7748 15.2281 16.8535 14.9166 16.8848 14.6579C16.9087 14.4603 16.9015 14.3523 16.8989 14.2854C16.8946 14.1778 16.8057 14.0671 16.7083 14.0201L16.1268 13.7587C16.1268 13.7587 15.2573 13.3803 14.7255 13.1377C14.6701 13.1124 14.6095 13.1007 14.5486 13.097C14.4152 13.0888 14.2657 13.1236 14.1706 13.2238C14.1656 13.2218 14.0994 13.279 13.3759 14.1555C13.336 14.2032 13.2425 14.3069 13.0808 14.2972C13.0564 14.2955 13.0321 14.292 13.0084 14.2858C12.9429 14.2685 12.8791 14.2457 12.8167 14.2193C12.693 14.1668 12.6496 14.1469 12.5651 14.1105C11.9878 13.8583 11.458 13.5209 10.9897 13.108C10.8641 12.9974 10.7473 12.8783 10.6269 12.7616C10.2067 12.3543 9.86266 11.9211 9.60674 11.4938C9.59277 11.4705 9.57124 11.4368 9.54805 11.3991C9.50618 11.331 9.46 11.25 9.44552 11.1944C9.40835 11.0473 9.50696 10.9291 9.50696 10.9291C9.50696 10.9291 9.75036 10.663 9.86345 10.5183C9.97225 10.379 10.0662 10.2428 10.126 10.1457C10.2438 9.95633 10.2811 9.76062 10.2192 9.60963C9.93861 8.92565 9.64915 8.24536 9.35083 7.56894C9.29195 7.43545 9.11682 7.33846 8.95756 7.32007C8.90362 7.31384 8.84972 7.30758 8.79556 7.30402C8.6615 7.29748 8.52717 7.29892 8.39329 7.30833Z" fill="white"/>
+                    <path d="M12.002 2C17.5248 2 22.002 6.47715 22.002 12C22.002 17.5228 17.5248 22 12.002 22C10.1681 22 8.44948 21.5064 6.97183 20.6447L2.00613 22L3.35809 17.0315C2.49591 15.5536 2.00195 13.8345 2.00195 12C2.00195 6.47715 6.4791 2 12.002 2ZM8.39329 7.30833C8.2639 7.31742 8.13704 7.34902 8.02154 7.40811C7.93489 7.45244 7.85445 7.51651 7.72806 7.63586C7.60871 7.74855 7.53954 7.84697 7.46666 7.94186C7.09696 8.4232 6.89826 9.01405 6.90195 9.62098C6.90396 10.1116 7.0314 10.5884 7.23266 11.0336C7.64079 11.9364 8.31385 12.8908 9.20291 13.7759C9.41647 13.9885 9.6257 14.2034 9.85131 14.402C10.9548 15.3736 12.2698 16.0742 13.6917 16.4482C13.6917 16.4482 14.2517 16.5342 14.2599 16.5347C14.4454 16.5447 14.6306 16.5313 14.8163 16.5218C15.1076 16.5068 15.392 16.428 15.6494 16.2909C15.8149 16.2028 15.8932 16.159 16.0321 16.0714C16.0321 16.0714 16.0747 16.0426 16.1569 15.9814C16.2919 15.8808 16.3753 15.81 16.4876 15.6934C16.5704 15.6074 16.6416 15.5058 16.6966 15.3913C16.7748 15.2281 16.8535 14.9166 16.8848 14.6579C16.9087 14.4603 16.9015 14.3523 16.8989 14.2854C16.8946 14.1778 16.8057 14.0671 16.7083 14.0201L16.1268 13.7587C16.1268 13.7587 15.2573 13.3803 14.7255 13.1377C14.6701 13.1124 14.6095 13.1007 14.5486 13.097C14.4152 13.0888 14.2657 13.1236 14.1706 13.2238C14.1656 13.2218 14.0994 13.279 13.3759 14.1555C13.336 14.2032 13.2425 14.3069 13.0808 14.2972C13.0564 14.2955 13.0321 14.292 13.0084 14.2858C12.9429 14.2685 12.8791 14.2457 12.8167 14.2193C12.693 14.1668 12.6496 14.1669 12.5651 14.1105C11.9878 13.8583 11.458 13.5209 10.9897 13.108C10.8641 12.9974 10.7473 12.8783 10.6269 12.7616C10.2067 12.3543 9.86266 11.9211 9.60674 11.4938C9.59277 11.4705 9.57124 11.4368 9.54805 11.3991C9.50618 11.331 9.46 11.25 9.44552 11.1944C9.40835 11.0473 9.50696 10.9291 9.50696 10.9291C9.50696 10.9291 9.75036 10.663 9.86345 10.5183C9.97225 10.379 10.0662 10.2428 10.126 10.1457C10.2438 9.95633 10.2811 9.76062 10.2192 9.60963C9.93861 8.92565 9.64915 8.24536 9.35083 7.56894C9.29195 7.43545 9.11682 7.33846 8.95756 7.32007C8.90362 7.31384 8.84972 7.30758 8.79556 7.30402C8.6615 7.29748 8.52717 7.29892 8.39329 7.30833ZM6.9 12a5.1 5.1 0 1110.2 0 5.1 5.1 0 01-10.2 0z" fill="white"/>
                   </svg>
-                  <span className="font-sans font-medium text-[14px]">Connect WhatsApp</span>
+                  <span className="font-sans font-medium text-[14px]">
+                    {t('connect_whatsapp', langKey)}
+                  </span>
                 </div>
-                <div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[9.5px] font-sans font-bold uppercase tracking-wider bg-[#1559EF] text-white rounded-full select-none shadow-sm animate-pulse">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-white flex-shrink-0">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    Upgrade
+                  </span>
                   {whatsappConnected && (
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-[11px] font-sans font-medium">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#3CD070] shadow-glow" />
-                      Connected
+                      {t('connected', langKey)}
                     </div>
                   )}
                 </div>
@@ -1257,7 +1530,9 @@ function SettingsModal({
 
               {/* Language Selection Row */}
               <div className="flex items-center justify-between mt-6 select-none text-left">
-                <span className="font-sans font-medium text-[14.5px] text-[#1a1a1a]">Language</span>
+                <span className="font-sans font-medium text-[14.5px] text-[#1a1a1a]">
+                  {t('language', langKey)}
+                </span>
                 <div className="relative">
                   <button 
                     onClick={() => setLangDropdownOpen(!langDropdownOpen)}
@@ -1285,81 +1560,6 @@ function SettingsModal({
                       ))}
                     </div>
                   )}
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="privacy" className="flex flex-col h-full m-0 outline-none">
-              <h4 className="font-sans font-medium text-[20px] text-[#1a1a1a] tracking-tight select-none mb-4 text-left">
-                Privacy Settings
-              </h4>
-
-              <div className="space-y-4 text-left">
-                <div className="flex items-center justify-between p-4 bg-[#ECE8E2]/60 rounded-[16px] border border-black/5">
-                  <div className="flex-1 pr-4">
-                    <h5 className="font-sans font-bold text-[13.5px] text-black">Public Profile</h5>
-                    <p className="font-sans text-[11px] text-[#6f6f77] mt-0.5 leading-relaxed">
-                      Allow other Aven members to search for your profile and view your roadmap milestones.
-                    </p>
-                  </div>
-                  <button 
-                    onClick={() => setPublicProfile(!publicProfile)}
-                    className={`w-11 h-6 rounded-full flex items-center p-0.5 transition-colors duration-200 ${
-                      publicProfile ? 'bg-[#104d3b]' : 'bg-[#D1D5DB]'
-                    }`}
-                  >
-                    <div className={`w-5 h-5 rounded-full bg-white shadow transform transition-transform duration-200 ${
-                      publicProfile ? 'translate-x-5' : 'translate-x-0'
-                    }`} />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between p-4 bg-[#ECE8E2]/60 rounded-[16px] border border-black/5">
-                  <div className="flex-1 pr-4">
-                    <h5 className="font-sans font-bold text-[13.5px] text-black">Share Interaction Data</h5>
-                    <p className="font-sans text-[11px] text-[#6f6f77] mt-0.5 leading-relaxed">
-                      Improve Aven by sharing anonymized chat transcript analytics with our research engine.
-                    </p>
-                  </div>
-                  <button 
-                    onClick={() => setShareData(!shareData)}
-                    className={`w-11 h-6 rounded-full flex items-center p-0.5 transition-colors duration-200 ${
-                      shareData ? 'bg-[#104d3b]' : 'bg-[#D1D5DB]'
-                    }`}
-                  >
-                    <div className={`w-5 h-5 rounded-full bg-white shadow transform transition-transform duration-200 ${
-                      shareData ? 'translate-x-5' : 'translate-x-0'
-                    }`} />
-                  </button>
-                </div>
-
-                <div className="pt-2 flex flex-col gap-3">
-                  <Button 
-                    variant="outline"
-                    onClick={onExportData}
-                    className="w-full py-3 h-auto"
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-4 w-4">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="7 10 12 15 17 10"></polyline>
-                      <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    Export my data (JSON)
-                  </Button>
-
-                  <Button 
-                    variant="destructive"
-                    onClick={onResetAccount}
-                    className="w-full py-3 h-auto"
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-4 w-4">
-                      <polyline points="3 6 5 6 21 6"></polyline>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                      <line x1="10" y1="11" x2="10" y2="17"></line>
-                      <line x1="14" y1="11" x2="14" y2="17"></line>
-                    </svg>
-                    Reset my plan & history
-                  </Button>
                 </div>
               </div>
             </TabsContent>
@@ -1439,14 +1639,14 @@ export default function DashboardPage() {
         }
         setUser(authUser);
 
-        const savedPhoto = localStorage.getItem(`aven_avatar_${authUser.id}`);
+        const savedPhoto = localStorage.getItem(`daylon_avatar_${authUser.id}`);
         if (savedPhoto) {
           setProfilePhoto(savedPhoto);
         }
 
         // Load cached name/username from localStorage immediately (fast render)
-        const cachedName = localStorage.getItem(`aven_display_name_${authUser.id}`);
-        const cachedUsername = localStorage.getItem(`aven_username_${authUser.id}`);
+        const cachedName = localStorage.getItem(`daylon_display_name_${authUser.id}`);
+        const cachedUsername = localStorage.getItem(`daylon_username_${authUser.id}`);
         if (cachedName) setProfileName(cachedName);
         if (cachedUsername) setProfileUsername(cachedUsername);
 
@@ -1491,8 +1691,8 @@ export default function DashboardPage() {
         setProfileUsername(dbUsername);
         
         // Keep localStorage in sync
-        localStorage.setItem(`aven_display_name_${authUser.id}`, dbName);
-        localStorage.setItem(`aven_username_${authUser.id}`, dbUsername);
+        localStorage.setItem(`daylon_display_name_${authUser.id}`, dbName);
+        localStorage.setItem(`daylon_username_${authUser.id}`, dbUsername);
 
         if (userProfile) {
           setTelegramConnected(!!userProfile.telegram_chat_id);
@@ -1564,8 +1764,8 @@ export default function DashboardPage() {
 
     if (user) {
       // Always persist to localStorage first so refresh always restores the correct name
-      localStorage.setItem(`aven_display_name_${user.id}`, name);
-      localStorage.setItem(`aven_username_${user.id}`, username);
+      localStorage.setItem(`daylon_display_name_${user.id}`, name);
+      localStorage.setItem(`daylon_username_${user.id}`, username);
       console.log('[DEBUG-save] Saved to localStorage for user:', user.id);
 
       const supabase = createClient();
@@ -1681,7 +1881,7 @@ export default function DashboardPage() {
       )}`;
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute('href', jsonString);
-      downloadAnchor.setAttribute('download', `aven_data_export_${authUser.id}.json`);
+      downloadAnchor.setAttribute('download', `daylon_data_export_${authUser.id}.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
@@ -1704,8 +1904,8 @@ export default function DashboardPage() {
       await supabase.from('sprint_progress').delete().eq('user_id', authUser.id);
       await supabase.from('user_memories').delete().eq('user_id', authUser.id);
 
-      localStorage.removeItem("aven_onboarding_transcript");
-      localStorage.removeItem("aven_onboarding_email");
+      localStorage.removeItem("daylon_onboarding_transcript");
+      localStorage.removeItem("daylon_onboarding_email");
 
       window.location.href = '/';
     } catch (err) {
@@ -1736,7 +1936,7 @@ export default function DashboardPage() {
 
   const handleToggleTelegram = () => {
     if (telegramConnected) {
-      alert("Your Telegram account is connected to Aven!");
+      alert("Your Telegram account is connected to Daylon!");
       return;
     }
     if (!user) return;
@@ -1746,7 +1946,7 @@ export default function DashboardPage() {
       .replace(/\//g, '_')
       .replace(/=+$/, '');
     
-    const botUrl = `https://t.me/AvenBot?start=${token}`;
+    const botUrl = `https://t.me/DaylonBot?start=${token}`;
     window.open(botUrl, '_blank');
   };
 
@@ -1762,11 +1962,12 @@ export default function DashboardPage() {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
           </svg>
-          <span className="text-[14px] font-medium tracking-wide">Syncing Aven Dashboard...</span>
+          <span className="text-[14px] font-medium tracking-wide">Syncing Daylon Dashboard...</span>
         </div>
       </div>
     );
   }
+  const langKey = activeLanguage === 'French' ? 'French' : 'English';
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -1782,29 +1983,57 @@ export default function DashboardPage() {
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-5 mt-2 mb-7">
           <div>
             <h1 className="font-sans text-[36px] md:text-[48px] leading-tight text-[#1a1a1a] tracking-[-0.03em]">
-              Hey <span className="font-bold">{profileName}.</span>
+              {t('hey', langKey)} <span className="font-bold">{profileName}.</span>
             </h1>
             <p className="font-sans text-[20px] md:text-[24px] font-medium text-[#4e4e55] leading-relaxed mt-2 tracking-tight max-w-3xl">
               {plan?.plan_data?.motivational_anchor || 'Start building the dream.'}
             </p>
           </div>
           <div className="flex items-center gap-3 mt-1 flex-shrink-0">
-            <button 
+            <Button 
+              variant="outline"
               onClick={() => setShowGoalsDrawer(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-[8px] border border-[#1a1a1a]/20 text-[#1a1a1a] text-[13px] font-sans font-medium hover:border-[#1a1a1a]/40 transition-colors whitespace-nowrap"
+              className="h-auto py-2.5 px-5 rounded-[8px] border border-[#1a1a1a]/20 text-[#1a1a1a] text-[13px] font-sans font-medium hover:bg-[#1a1a1a]/5 transition-colors whitespace-nowrap"
             >
-              Update Goals
-            </button>
-            <button 
+              {t('update_goals', langKey)}
+            </Button>
+            <Button 
               onClick={() => setShowAdjustModal(true)}
-              className="px-5 py-2.5 rounded-[8px] bg-[#1a1a1a] text-white text-[13px] font-sans font-medium hover:bg-[#333] transition-colors whitespace-nowrap"
+              className="h-auto py-2.5 px-5 rounded-[8px] bg-[#1a1a1a] hover:bg-[#333] text-white text-[13px] font-sans font-medium transition-colors whitespace-nowrap"
             >
-              Adjust overall plan
-            </button>
+              {t('adjust_overall_plan', langKey)}
+            </Button>
           </div>
         </div>
 
+        {/* Day 15+ Premium Upgrade Nudge Banner */}
+        {activeDay >= 15 && (
+          <div className="mb-6 rounded-[20px] bg-gradient-to-r from-[#104D3B] to-[#1a4034] p-6 text-white flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm border border-white/10 select-none">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white flex-shrink-0 mt-0.5">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+              </div>
+              <div>
+                <h4 className="text-[18px] font-sans font-bold leading-snug">Day {activeDay} of your 21-day sprint</h4>
+                <p className="text-[14px] text-white/80 font-sans mt-1 leading-relaxed max-w-2xl">
+                  You are approaching the end of your initial sprint! Unlock Daylon Pro to continue with the next phase of your relocation plan, including customized study guides, visa interviews prep, and professional French reviews.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/pro"
+              className="px-6 py-3 rounded-[8px] bg-white text-[#104D3B] text-[13px] font-sans font-semibold hover:bg-white/95 transition-all text-center whitespace-nowrap self-start md:self-auto hover:scale-[1.02] active:scale-[0.98]"
+            >
+              Upgrade to Pro
+            </Link>
+          </div>
+        )}
+
         <div className="bg-white rounded-[20px] border border-black/5 p-5 mb-5">
+          {/* Commented out Grid/Swipe view mode selector per user request */}
+          {/* 
           <div className="flex justify-center mb-5">
             <div className="flex items-center bg-[rgba(39,39,42,0.06)] rounded-[8px] p-0.5">
               {(['Grid','Swipe'] as ViewMode[]).map((m) => (
@@ -1819,6 +2048,13 @@ export default function DashboardPage() {
                 </button>
               ))}
             </div>
+          </div>
+          */}
+
+          <div className="text-left px-[1.5%] mb-6 mt-1">
+            <h2 className="text-[#1a1a1a] text-[28px] font-sans font-medium tracking-tight">
+              {t('here_are_move_cards', langKey)}
+            </h2>
           </div>
 
           <div className="flex flex-wrap gap-4 px-[1.5%]">
@@ -1835,6 +2071,7 @@ export default function DashboardPage() {
                   status={card?.status ?? 'pending'}
                   label={`Day ${dayNum} Move`}
                   onStatusChange={handleStatusChange}
+                  langKey={langKey}
                 />
               );
             })}
@@ -1865,7 +2102,7 @@ export default function DashboardPage() {
             <h2 className="text-[#1a1a1a] text-[24px] font-sans font-medium leading-snug">
               {plan?.plan_data?.sprint_theme ? `Sprint Theme: ${plan.plan_data.sprint_theme}` : "At the end of this 21 days you'd be able to..."}
             </h2>
-            <p className="text-[#4e4e55] text-[14px] font-sans mt-1.5 max-w-4xl">
+            <p className="text-[#4e4e55] text-[16px] font-sans mt-1.5 max-w-4xl">
               {plan?.plan_data?.summary || "and this will help you do x and y and ultimately z in 3 to 5 years"}
             </p>
           </div>
@@ -1877,22 +2114,22 @@ export default function DashboardPage() {
           {/* Left column */}
           <div className="flex flex-col gap-4">
             <MapBanner onClick={() => setShowRoadmap(true)} />
-            <div className="grid grid-cols-3 gap-3">
-              <StatCard value={stats.goalsPending.toString()} label={"Goals\nPending"} accent />
-              <StatCard value={stats.longestStreak.toString()} unit="DAYS" label={"Longest\nstreak"} />
-              <StatCard value={stats.dreamDuration.toString()} unit="MONTHS" label={"Dream\nduration"} />
+            <div className="flex flex-col md:grid md:grid-cols-3 gap-3">
+              <StatCard value={stats.goalsPending.toString()} label={t('goals_pending', langKey)} accent />
+              <StatCard value={stats.longestStreak.toString()} unit="DAYS" label={t('longest_streak', langKey)} />
+              <StatCard value={stats.dreamDuration.toString()} unit="MONTHS" label={t('dream_duration', langKey)} />
             </div>
             {/* Upgrade to Pro */}
             <div className="rounded-[20px] bg-[#1a1a1a] p-6 flex flex-col justify-between min-h-[130px]">
               <h3 className="text-white font-sans text-[28px] font-light leading-tight tracking-tight">
-                Upgrade to Pro
+                {t('upgrade_pro', langKey)}
               </h3>
               <div className="mt-5">
                 <Link
                   href="/pro"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[8px] bg-white/10 border border-white/10 text-white text-[12px] font-sans hover:bg-white/15 transition-colors"
                 >
-                  Get started
+                  {t('get_started', langKey) || 'Get started'}
                   <svg width="12" height="12" viewBox="0 0 20 20" fill="none">
                     <path d="M4 10h12M10 4l6 6-6 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
@@ -1902,14 +2139,20 @@ export default function DashboardPage() {
           </div>
 
           {/* Right column — habit grid fills full height */}
-          <HabitGrid dailyCards={cards} filter={habitFilter} onFilterChange={setHabitFilter} />
+          <HabitGrid 
+            dailyCards={cards} 
+            filter={habitFilter} 
+            onFilterChange={setHabitFilter}
+            habits={plan?.plan_data?.habits || []}
+            langKey={langKey}
+          />
         </div>
       </main>
 
       {/* ── Footer ── */}
       <footer className="px-6 md:px-8 py-5 flex items-center justify-between text-[11px] font-sans text-[#1a1a1a]/30 border-t border-black/5">
         <div className="flex items-center gap-4">
-          <span>© Aven 2026</span>
+          <span className="font-sans">© Daylon 2026</span>
           <span className="text-[#1a1a1a]/15">·</span>
           <button 
             onClick={(e) => {
@@ -1991,6 +2234,7 @@ export default function DashboardPage() {
         isOpen={showPrivacyModal}
         onClose={() => setShowPrivacyModal(false)}
       />
+      <GodModeWidget />
     </div>
   );
 }

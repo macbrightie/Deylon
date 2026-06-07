@@ -15,14 +15,14 @@ export function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
       <DialogContent className="max-w-[520px] p-8 overflow-hidden flex flex-col">
         <DialogHeader className="p-0 pb-6 text-left">
           <DialogTitle>Privacy & Data Protection</DialogTitle>
-          <DialogDescription>How Aven protects your personal information and coaching history.</DialogDescription>
+          <DialogDescription>How Daylon protects your personal information and coaching history.</DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto pr-1 space-y-5 text-left text-[#1a1a1a] text-[13.5px] font-sans leading-relaxed select-none max-h-[300px]">
           <div>
             <h4 className="font-bold text-[14px] text-black mb-1">1. Absolute Confidentiality</h4>
             <p className="text-black/75">
-              Your dreams, goals, and daily struggles are personal. Aven never sells or shares your habit data, metrics, or chat histories with third-party advertisers or databases.
+              Your dreams, goals, and daily struggles are personal. Daylon never sells or shares your habit data, metrics, or chat histories with third-party advertisers or databases.
             </p>
           </div>
 

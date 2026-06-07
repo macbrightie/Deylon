@@ -79,7 +79,7 @@ export function Hero() {
 
         {/* Subheading - exactly 20px away */}
         <p className="mt-5 text-[18px] text-[#4e4e55] max-w-2xl leading-relaxed font-sans">
-          Tell us where you are. Aven builds the rest.
+          Tell us where you are. Daylon builds the rest.
         </p>
 
         {/* Button Group - pulled up */}

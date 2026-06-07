@@ -16,7 +16,7 @@ export function SiteFooter() {
         <p className="text-[15px] md:text-[17px] font-sans text-[#4e4e55] max-w-2xl mx-auto leading-relaxed mb-8">
           The version of your life you keep imagining doesn&apos;t require luck.
           It requires one clear plan and someone to walk with you every day.
-          That&apos;s Aven.
+          That&apos;s Daylon.
         </p>
         <a
           href="#embedded-chat"
@@ -36,7 +36,7 @@ export function SiteFooter() {
           <div className="w-full md:w-[70%] max-w-[1000px] mx-auto text-center flex flex-col items-center">
             {/* Wordmark */}
             <p className="text-white font-serif text-[32px] mb-8 tracking-tight">
-              Aven
+              Daylon
             </p>
 
             {/* Discord CTA container containing a separate Join button */}
@@ -66,7 +66,7 @@ export function SiteFooter() {
             {/* Bottom bar */}
             <div className="w-full flex flex-col md:flex-row items-center justify-between gap-4 text-[13px] font-sans text-white/35 pt-4">
               <div className="flex items-center gap-4">
-                <span>© Aven 2026</span>
+                <span>© Daylon 2026</span>
                 <span className="text-white/20">|</span>
                 <button 
                   onClick={(e) => {

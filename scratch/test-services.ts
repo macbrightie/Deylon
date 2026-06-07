@@ -4,7 +4,7 @@ import { MemoryService } from '../src/lib/ai/services/memory.service';
 
 async function runMockTest() {
   console.log('--------------------------------------------------');
-  console.log('AVEN AI SERVICES INTEGRATION TEST (TYPE SAFETY CHECK)');
+  console.log('DAYLON AI SERVICES INTEGRATION TEST (TYPE SAFETY CHECK)');
   console.log('--------------------------------------------------');
   
   // Create a browser client instance to check method signature type compliance

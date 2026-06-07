@@ -10,7 +10,7 @@ export function Features() {
     },
     {
       title: "Adaptive Planning",
-      description: "Life happens. Aven learns from your progress and adapts your plan as your situation evolves.",
+      description: "Life happens. Daylon learns from your progress and adapts your plan as your situation evolves.",
     },
     {
       title: "Privacy First",
@@ -27,7 +27,7 @@ export function Features() {
             <span className="text-[#9ca3af]">you actually live.</span>
           </h2>
           <p className="text-[18px] text-foreground/60 font-sans">
-            Most planners fail because they're too rigid. Aven is built to be as fluid and dynamic as your life.
+            Most planners fail because they're too rigid. Daylon is built to be as fluid and dynamic as your life.
           </p>
         </div>
 

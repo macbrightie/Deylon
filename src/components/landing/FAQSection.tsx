@@ -5,15 +5,15 @@ import { useState } from 'react';
 const faqs = [
   {
     question: "How does the AI life planning work?",
-    answer: "Aven uses advanced AI to analyze your goals, habits, and constraints shared during our initial deep-dive conversation. It then synthesizes this into a structured, executable roadmap broken down by year, month, and day.",
+    answer: "Daylon uses advanced AI to analyze your goals, habits, and constraints shared during our initial deep-dive conversation. It then synthesizes this into a structured, executable roadmap broken down by year, month, and day.",
   },
   {
-    question: "Is Aven really free to start?",
+    question: "Is Daylon really free to start?",
     answer: "Yes! You can build your first life plan and receive daily Telegram nudges completely for free. We offer a 'Pro' tier for those who want more frequent deep-dives, custom integrations, and advanced goal tracking.",
   },
   {
     question: "Why use Telegram for daily nudges?",
-    answer: "We believe in meeting you where you already are. Instead of asking you to download another app you'll eventually forget to check, Aven sends your daily priorities straight to your favorite messaging app.",
+    answer: "We believe in meeting you where you already are. Instead of asking you to download another app you'll eventually forget to check, Daylon sends your daily priorities straight to your favorite messaging app.",
   },
   {
     question: "How is my data handled?",
@@ -32,7 +32,7 @@ export function FAQSection() {
             Common Questions
           </h2>
           <p className="text-lg text-foreground/60 font-sans">
-            Everything you need to know about Aven.
+            Everything you need to know about Daylon.
           </p>
         </div>
 

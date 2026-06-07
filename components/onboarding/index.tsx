@@ -31,7 +31,7 @@ export function ChallengeGrid({ totalDays = 100 }: { totalDays?: number }) {
 
 export function TelegramConnect({ userId }: { userId: string }) {
   const token = Buffer.from(userId).toString('base64url');
-  const botUsername = 'AvenBot'; // Replace with actual bot username
+  const botUsername = 'DaylonBot'; // Replace with actual bot username
   const deepLink = `https://t.me/${botUsername}?start=${token}`;
 
   return (

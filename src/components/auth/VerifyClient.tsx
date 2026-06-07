@@ -40,14 +40,14 @@ export function VerifyClient() {
           }
         }
         
-        const transcript = localStorage.getItem("aven_onboarding_transcript");
+        const transcript = localStorage.getItem("daylon_onboarding_transcript");
         if (transcript) {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
             try {
               const rawMessages = JSON.parse(transcript);
               const payloadMessages = rawMessages.map((m: any) => ({
-                role: m.role === 'assistant' || m.role === 'aven' ? 'assistant' as const : 'user' as const,
+                role: m.role === 'assistant' || m.role === 'daylon' ? 'assistant' as const : 'user' as const,
                 content: m.content || m.text || '',
               }));
 
@@ -62,7 +62,7 @@ export function VerifyClient() {
                 .single();
 
               if (!convError && conv) {
-                localStorage.removeItem("aven_onboarding_transcript");
+                localStorage.removeItem("daylon_onboarding_transcript");
                 setStatus('success');
                 setTimeout(() => {
                   router.push(`/building?conversationId=${conv.id}`);

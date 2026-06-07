@@ -20,12 +20,12 @@ export function Conversation() {
     {
       id: '1',
       role: 'assistant',
-      content: "Hi, I'm Aven. I'm here to help you turn your biggest goals into a daily reality.",
+      content: "Hi, I'm Daylon. I'm here to help you turn your biggest goals into a daily reality.",
     },
     {
       id: '2',
       role: 'assistant',
-      content: "What's the one thing you've been wanting to change or achieve, but haven't found the right path for yet?",
+      content: "What's the one thing you've been wanting to change or achieve, but hdaylon't found the right path for yet?",
     },
   ]);
   const [input, setInput] = useState('');
@@ -90,10 +90,10 @@ export function Conversation() {
 
       // If onboarding profile is complete, save transcript to cache and switch to email capture step
       if (data.complete) {
-        localStorage.setItem("aven_onboarding_transcript", JSON.stringify(newMessages.concat(assistantMsg)));
+        localStorage.setItem("daylon_onboarding_transcript", JSON.stringify(newMessages.concat(assistantMsg)));
         setTimeout(() => {
           setStep('email');
-        }, 2500); // 2.5 second delay so they can read Aven's final complete sign-off message
+        }, 2500); // 2.5 second delay so they can read Daylon's final complete sign-off message
       }
     } catch (error) {
       console.error('[Onboarding Chat Error]:', error);
@@ -115,7 +115,7 @@ export function Conversation() {
       const supabase = createClient();
       
       // Cache their email to pull on successful login
-      localStorage.setItem("aven_onboarding_email", email);
+      localStorage.setItem("daylon_onboarding_email", email);
 
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -180,7 +180,7 @@ export function Conversation() {
               <Input 
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder={loading ? "Aven is writing..." : (isListening ? "Listening..." : "Type your answer here...")}
+                placeholder={loading ? "Daylon is writing..." : (isListening ? "Listening..." : "Type your answer here...")}
                 disabled={loading}
                 className="w-full h-14 rounded-[999px] border-border/50 bg-white pl-6 pr-14 font-sans text-[16px] focus-visible:ring-[#104d3b] disabled:bg-gray-100 disabled:opacity-60"
               />
@@ -306,7 +306,7 @@ export function Conversation() {
               </div>
               <div>
                 <p className="text-[16px] md:text-[18px] font-sans text-[#1a1a1a] leading-relaxed max-w-sm pt-1.5">
-                  <b>Magic link sent!</b> Click the confirmation link in your email to instantly log in and access your personal Aven coach plan.
+                  <b>Magic link sent!</b> Click the confirmation link in your email to instantly log in and access your personal Daylon coach plan.
                 </p>
               </div>
             </div>

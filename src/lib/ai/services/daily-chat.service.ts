@@ -15,7 +15,7 @@ export interface HealthScoreResult {
 
 export class DailyChatService {
   /**
-   * Main chat driver for Aven.
+   * Main chat driver for Daylon.
    * Pulls context, retrieves memories, prepends context injection, and sends to Gemini.
    */
   static async chat(
@@ -123,7 +123,7 @@ export class DailyChatService {
       coreMemories: core.map((c) => c.content),
       relevantMemories: relevant.map((r) => r.content),
       lastThreeMessages: messages.slice(-3).map((m) => ({
-        role: m.role === 'assistant' ? 'aven' : 'user',
+        role: m.role === 'assistant' ? 'daylon' : 'user',
         content: m.content,
       })),
     });

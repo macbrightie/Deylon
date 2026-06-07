@@ -13,6 +13,27 @@ export interface WelcomeMessageData {
   appUrl: string;
 }
 
+export function formatUserGreeting(preferredGreeting?: string | null, displayName?: string | null, email?: string | null): string {
+  if (preferredGreeting && preferredGreeting.trim()) {
+    const trimmed = preferredGreeting.trim();
+    if (/^(greetings|hey|hi|yo|hello|dear|bonjour|salut)\b/i.test(trimmed)) {
+      return trimmed;
+    }
+    return `Hey ${trimmed}`;
+  }
+
+  if (displayName && displayName.trim()) {
+    return `Hey ${displayName.trim()}`;
+  }
+
+  if (email) {
+    const prefix = email.split('@')[0];
+    return `Hey ${prefix}`;
+  }
+
+  return 'Hey';
+}
+
 export function buildDailyReminder(data: DailyReminderData): string {
   const name = data.userName ? `Hey ${data.userName}` : 'Hey';
   return [
@@ -24,7 +45,7 @@ export function buildDailyReminder(data: DailyReminderData): string {
     `⏱ <i>${data.duration}</i>`,
     `🎯 <i>Towards: ${data.chainToGoal}</i>`,
     ``,
-    `<a href="${data.appUrl}/dashboard">→ Open Aven dashboard</a>`,
+    `<a href="${data.appUrl}/dashboard">→ Open Daylon dashboard</a>`,
   ].join('\n');
 }
 
@@ -33,7 +54,7 @@ export function buildWelcomeMessage(data: WelcomeMessageData): string {
   return [
     `✅ <b>You're connected${name}!</b>`,
     ``,
-    `Aven will send your daily task reminders here, starting tomorrow morning.`,
+    `Daylon will send your daily task reminders here, starting tomorrow morning.`,
     ``,
     `🎯 <b>Your goal:</b> ${data.primaryGoal}`,
     ``,

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Connect Telegram — Aven',
+  title: 'Connect Telegram — Daylon',
   description: 'Connect your Telegram account to receive daily task reminders.',
 };
 
@@ -13,7 +13,7 @@ export default function ConnectPage() {
           Get daily reminders
         </h1>
         <p className="text-muted-foreground">
-          Connect Telegram and Aven will send you your daily task every morning,
+          Connect Telegram and Daylon will send you your daily task every morning,
           straight to your phone.
         </p>
         {/* TelegramConnect component will be mounted here */}

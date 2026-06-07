@@ -25,6 +25,7 @@ export interface DailyTask {
   chain_to_sprint: string;
   chain_to_goal: string;
   why_this_works?: string;
+  social_chat_messages?: string[];
 }
 
 export interface WeeklyRoutine {

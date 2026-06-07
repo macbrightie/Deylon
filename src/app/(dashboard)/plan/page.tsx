@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Your plan — Aven',
-  description: 'View your full Aven life plan and connection map.',
+  title: 'Your plan — Daylon',
+  description: 'View your full Daylon life plan and connection map.',
 };
 
 export default function PlanPage() {

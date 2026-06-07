@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { Conversation } from '@/components/onboarding/Conversation';
 
 export const metadata: Metadata = {
-  title: 'Start your journey — Aven',
-  description: 'Tell Aven about yourself to get your personalised life plan.',
+  title: 'Start your journey — Daylon',
+  description: 'Tell Daylon about yourself to get your personalised life plan.',
 };
 
 export default function StartPage() {
@@ -15,7 +15,7 @@ export default function StartPage() {
         <div className="flex justify-center mb-12">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-5 h-5 bg-[#104d3b] rounded-[999px]" />
-            <span className="font-sans font-bold text-2xl tracking-tight text-[#1a1a1a]">aven</span>
+            <span className="font-sans font-bold text-2xl tracking-tight text-[#1a1a1a]">daylon</span>
           </Link>
         </div>
 
@@ -24,7 +24,7 @@ export default function StartPage() {
             Let&apos;s build your plan
           </h1>
           <p className="text-[18px] text-foreground/60 font-sans max-w-lg mx-auto">
-            Answer a few questions and Aven will create your personalised life
+            Answer a few questions and Daylon will create your personalised life
             plan in minutes.
           </p>
         </div>

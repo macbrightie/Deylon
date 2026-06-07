@@ -8,7 +8,7 @@ const steps = [
   {
     id: "step-1",
     number: "01",
-    title: "Talk to Aven",
+    title: "Talk to Daylon",
     description:
       "Tell us about your life, your dream, where you're starting from, what's stopped you before. Not a form. A real conversation that actually listens.",
     image: "/UI-design-and-element/Card 1.webp",
@@ -18,7 +18,7 @@ const steps = [
     number: "02",
     title: "Get your plan",
     description:
-      "In minutes, Aven builds a personal 5 or 10-year plan from your own words, broken into years, quarters, and daily actions you can actually do.",
+      "In minutes, Daylon builds a personal 5 or 10-year plan from your own words, broken into years, quarters, and daily actions you can actually do.",
     image: "/UI-design-and-element/card-2.webp",
   },
   {

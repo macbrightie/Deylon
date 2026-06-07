@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
         // Call Daily Coaching chat generator
         assistantMessage = await DailyChatService.chat(supabase, user.id, activeConversationId, sprintDay);
 
-        // Save Aven's reply to history
+        // Save Daylon's reply to history
         const { data: currentConv } = await supabase
           .from('conversations')
           .select('messages')

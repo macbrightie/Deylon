@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Your 100-day challenge — Aven',
-  description: 'Launch your 100-day challenge with Aven.',
+  title: 'Your 100-day challenge — Daylon',
+  description: 'Launch your 100-day challenge with Daylon.',
 };
 
 export default function ChallengePage() {
@@ -13,7 +13,7 @@ export default function ChallengePage() {
           Your 100-day challenge starts now
         </h1>
         <p className="text-muted-foreground mb-12 max-w-xl mx-auto">
-          100 days. One task a day. Aven will guide you every step of the way.
+          100 days. One task a day. Daylon will guide you every step of the way.
         </p>
         {/* ChallengeGrid component will be mounted here */}
       </div>

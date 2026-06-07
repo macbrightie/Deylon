@@ -10,7 +10,9 @@ CRITICAL RULES:
 5. Moves must fit within their stated daily time availability. If they have 30 minutes, no move takes 45.
 6. The 21-day sprint is the beginning of a longer journey. It is not the whole plan. Design it as the foundation — the habits and mindsets that make everything else possible.
 7. Sequence matters. Do not give advanced moves to someone who hasn't built the foundation yet. Week 1 is always about establishing the baseline habit. Week 2 adds depth. Week 3 challenges and consolidates.
-8. You MUST generate exactly 21 daily tasks in the 'daily_tasks' array, numbered sequentially from 1 to 21. Failing to generate all 21 days breaks the dashboard.
+8. Every checklist sentence inside the 'task' field must follow a strict, deep, and actionable format: 'Action. (Example: [specific example/link/tool]). [Helper hint/clue].' For example: 'Look up French visa options. (Example: Passeport Talent website). Clue: check the salary threshold requirements first, as that is the most common blocker.'
+9. For each daily task, you MUST generate a field called 'social_chat_messages' which is a JSON array of 2 to 3 friendly, warm, conversational, and relatable chat message bubbles. Do NOT include any generic greetings like 'Greetings Dr. Bright' or 'Salut Bright' in the message text, as the greeting prefix is dynamically appended by the system. Keep them well-spaced and natural.
+10. You MUST generate EXACTLY 21 daily tasks in the 'daily_tasks' array, numbered sequentially from 1 to 21. Each day's tasks should fit the user's availability: on days they are available (e.g. Tuesdays/Fridays), give a structured set of multiple sentences totaling the hours they have. On days they are NOT available, generate light 5-10 minute micro-habits. Do not skip any days, and do not use placeholders or ellipsis in the output list. The array MUST contain exactly 21 items.
 
 GOAL-TYPE FRAMEWORKS (apply based on primaryGoalType):
 
@@ -56,11 +58,11 @@ RETURN ONLY VALID JSON — no preamble, no explanation, no markdown code blocks:
   "primary_goal": "",
   "primary_goal_type": "",
   "supporting_goals": [],
-  "timeline_months": 3|6|12|13|18|24|36|60,
-  "intensity": "steady|serious|all-in",
+  "timeline_months": 3,
+  "intensity": "steady",
   "milestones": [
     {
-      "period": "21 days|3 months|6 months|13 months|24 months|36 months|60 months",
+      "period": "21 days",
       "title": "",
       "description": "",
       "key_focus": "",
@@ -73,14 +75,53 @@ RETURN ONLY VALID JSON — no preamble, no explanation, no markdown code blocks:
     "week_3_theme": ""
   },
   "daily_tasks": [
-    // IMPORTANT: This array must contain EXACTLY 21 elements, one for each day from day_number: 1 to day_number: 21. Sequential.
     {
       "day_number": 1,
-      "task": "",
-      "duration": "",
-      "chain_to_sprint": "One sentence — how this connects to the 21-day goal",
-      "chain_to_goal": "One sentence — how the sprint connects to the ultimate dream",
-      "why_this_works": "One sentence — research basis for this specific move"
+      "task": "First easy action. (Example: [concrete example]). [Clue/Hint].",
+      "duration": "10 mins",
+      "social_chat_messages": [
+        "First check-in bubble body...",
+        "Second task body text..."
+      ],
+      "chain_to_sprint": "How this connects to the 21-day goal",
+      "chain_to_goal": "How the sprint connects to the ultimate dream",
+      "why_this_works": "Research basis for this specific move"
+    },
+    {
+      "day_number": 2,
+      "task": "Action. (Example: [specific example]). [Clue/Hint]. Action. (Example: [specific example]). [Clue/Hint].",
+      "duration": "15 mins",
+      "social_chat_messages": [
+        "Check-in bubble...",
+        "Task explanation bubble..."
+      ],
+      "chain_to_sprint": "...",
+      "chain_to_goal": "...",
+      "why_this_works": "..."
+    },
+    {
+      "day_number": 3,
+      "task": "Action. (Example: [specific example]). [Clue/Hint].",
+      "duration": "15 mins",
+      "social_chat_messages": [
+        "Check-in...",
+        "Action details..."
+      ],
+      "chain_to_sprint": "...",
+      "chain_to_goal": "...",
+      "why_this_works": "..."
+    },
+    {
+      "day_number": 21,
+      "task": "Final 21st day action. (Example: [specific example]). [Clue/Hint]. Must lead to a major win or two.",
+      "duration": "20 mins",
+      "social_chat_messages": [
+        "Coaching bubble...",
+        "Celebration bubble..."
+      ],
+      "chain_to_sprint": "...",
+      "chain_to_goal": "...",
+      "why_this_works": "..."
     }
   ],
   "weekly_routine": {
@@ -96,7 +137,7 @@ RETURN ONLY VALID JSON — no preamble, no explanation, no markdown code blocks:
     {
       "habit": "",
       "duration": "",
-      "best_time": "morning|afternoon|evening",
+      "best_time": "morning",
       "purpose": "",
       "tiny_version": "The smallest possible version of this habit for low-energy days"
     }
@@ -104,13 +145,14 @@ RETURN ONLY VALID JSON — no preamble, no explanation, no markdown code blocks:
   "biggest_risk_and_fix": {
     "risk": "Their stated blocker reframed as a solvable problem",
     "fix": "Specific strategy based on how they said they'd avoid it this time",
-    "early_warning_sign": "The specific behaviour that signals they're about to fall off — so Aven can catch it early"
+    "early_warning_sign": "The specific behaviour that signals they're about to fall off — so Daylon can catch it early"
   },
   "identity_statement": "The identity they are building toward — 'I am someone who...' — used in recovery messages",
   "first_move_tonight": "One thing they can do in the next 2 hours. Immediate. Under 10 minutes.",
   "upgrade_nudge_day": 15,
   "context_notes": "Any location-specific, cultural, or financial context baked into this plan"
-}`;
+}
+`;
 
 export function buildPlanGenerationPrompt(
   profile: Partial<ExtractedProfile>,

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import './globals.css';
+import { CSPostHogProvider } from '@/lib/analytics/posthog';
 
 const recoleta = localFont({
   src: '../../public/fonts/fonnts.com-recoleta-medium.otf',
@@ -43,11 +44,11 @@ const hafferXHMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'Aven — Your AI Life Planner',
+  title: 'Daylon — Your AI Life Planner',
   description:
-    'Aven turns your biggest goals into a personalised, day-by-day action plan — powered by AI.',
+    'Daylon turns your biggest goals into a personalised, day-by-day action plan — powered by AI.',
   openGraph: {
-    title: 'Aven — Your AI Life Planner',
+    title: 'Daylon — Your AI Life Planner',
     description:
       'Conversational onboarding, personalised AI life plans, and daily task reminders via Telegram.',
     type: 'website',
@@ -62,7 +63,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${recoleta.variable} ${haffer.variable} ${hafferXHMono.variable}`}>
       <body className="min-h-screen bg-background text-foreground antialiased font-sans">
-        {children}
+        <CSPostHogProvider>
+          {children}
+        </CSPostHogProvider>
       </body>
     </html>
   );
