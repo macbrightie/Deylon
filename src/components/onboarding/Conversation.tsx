@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { VoiceInput } from '../../../components/chat/VoiceInput';
-import { createClient } from '@/lib/supabase/client';
 
 interface Message {
   id: string;
@@ -14,7 +12,6 @@ interface Message {
 }
 
 export function Conversation() {
-  const router = useRouter();
   const [step, setStep] = useState<'chat' | 'email' | 'done'>('chat');
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -112,21 +109,17 @@ export function Conversation() {
     if (!email.trim() || loadingEmail) return;
     setLoadingEmail(true);
     try {
-      const supabase = createClient();
-      
       // Cache their email to pull on successful login
       localStorage.setItem("deylon_onboarding_email", email);
 
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/verify`,
-        },
-      });
+      const { sendMagicLinkOrBypass } = await import('@/lib/supabase/auth-helper');
+      const { error, bypassed } = await sendMagicLinkOrBypass(email, `${window.location.origin}/verify`);
 
       if (error) throw error;
 
-      setStep('done');
+      if (!bypassed) {
+        setStep('done');
+      }
     } catch (err) {
       console.error("[Email OTP Link Error]:", err);
       alert("We encountered an issue sending your magic link. Please check your email and try again.");

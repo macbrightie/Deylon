@@ -23,6 +23,9 @@ export async function createClient() {
           }
         },
       },
+      cookieOptions: {
+        maxAge: 60 * 60 * 24 * 365, // 1 year
+      },
     }
   );
 }
@@ -50,6 +53,9 @@ export async function createServiceClient() {
             // Ignored in Server Components
           }
         },
+      },
+      cookieOptions: {
+        maxAge: 60 * 60 * 24 * 365, // 1 year
       },
     }
   );
