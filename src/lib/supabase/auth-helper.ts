@@ -8,7 +8,11 @@ import { createClient } from '@/lib/supabase/client';
  */
 export async function sendMagicLinkOrBypass(email: string, redirectTo: string) {
   const isDev = process.env.NODE_ENV === 'development' || 
-                (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
+                (typeof window !== 'undefined' && (
+                  window.location.hostname === 'localhost' || 
+                  window.location.hostname === '127.0.0.1' ||
+                  window.location.hostname.endsWith('vercel.app')
+                ));
   const isGodMode = process.env.NEXT_PUBLIC_ENABLE_GOD_MODE === 'true';
 
   if (isDev || isGodMode) {

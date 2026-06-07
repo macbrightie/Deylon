@@ -18,7 +18,11 @@ export function Navbar() {
   const router = useRouter();
 
   const isDev = process.env.NODE_ENV === 'development' || 
-                (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
+                (typeof window !== 'undefined' && (
+                  window.location.hostname === 'localhost' || 
+                  window.location.hostname === '127.0.0.1' ||
+                  window.location.hostname.endsWith('vercel.app')
+                ));
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);

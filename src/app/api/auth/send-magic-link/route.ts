@@ -11,7 +11,11 @@ export async function POST(request: Request) {
     }
 
     const host = request.headers.get('host') || '';
-    const isDev = process.env.NODE_ENV === 'development' || host.includes('localhost') || host.includes('127.0.0.1');
+    const isDev = process.env.NODE_ENV === 'development' || 
+                  host.includes('localhost') || 
+                  host.includes('127.0.0.1') ||
+                  host.includes('vercel.app') ||
+                  process.env.VERCEL_ENV === 'preview';
     const isGodMode = process.env.NEXT_PUBLIC_ENABLE_GOD_MODE === 'true';
 
     const supabase = await createServiceClient();
