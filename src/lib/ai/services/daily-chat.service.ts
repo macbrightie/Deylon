@@ -1,5 +1,5 @@
 import { OpenAIService } from './openai';
-import { DAILY_CHAT_SYSTEM_PROMPT, buildDailyChatPrompt } from '../prompts/daily-chat';
+import { buildDailyChatPrompt } from '../prompts/daily-chat';
 import { buildChatSystemPrompt } from '../utils/context-builder';
 import { retrieveMemories } from '../utils/memory-retrieval';
 import { HEALTH_SCORE_SYSTEM_PROMPT, buildHealthScorePrompt } from '../prompts/health-score';

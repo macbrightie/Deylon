@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
       await sendMessage(
         chatId,
-        '👋 <b>Welcome to Deylon!</b>\n\nBefore we start our daily checks, how should I address you? (For instance, Nigerian developers might prefer "Hey Bright", "Greetings Dr. Bright", "Yo man", "Greetings sis" or something cultural that fits you). Reply with your preferred greeting!'
+        '👋 Hey, this is Deylon.\n\nBefore we get started, what should I call you?'
       );
     } else {
       const supabase = await createServiceClient();
