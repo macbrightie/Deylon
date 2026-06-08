@@ -69,6 +69,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: true });
       }
 
+      console.log('[Telegram Webhook] Linking account. Decoded userId:', userId, 'chatId:', chatId);
+
       const { data: user, error } = await supabase
         .from('users')
         .update({ 
@@ -80,6 +82,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (error || !user) {
+        console.error('[Telegram Webhook] Database link error for user:', userId, 'Error:', error);
         await sendMessage(chatId, '❌ Could not link your account. Please try again from your Deylon dashboard.');
         return NextResponse.json({ ok: true });
       }
