@@ -1,4 +1,5 @@
 import { OpenAIService } from './openai';
+import { getDayNumber } from '@/lib/utils/date';
 import { buildDailyChatPrompt } from '../prompts/daily-chat';
 import { buildChatSystemPrompt } from '../utils/context-builder';
 import { retrieveMemories } from '../utils/memory-retrieval';
@@ -25,11 +26,25 @@ export class DailyChatService {
     sprintDay: number
   ): Promise<string> {
     // 1. Fetch user profile and summary info
-    const { data: user, error: userError } = await supabase
+    const { data: user } = await supabase
       .from('users')
-      .select('profile_summary, tone_preference')
+      .select('profile_summary, tone_preference, timezone')
       .eq('id', userId)
       .single();
+
+    // Fetch latest active plan to calculate timezone-safe sprint day
+    const { data: plan } = await supabase
+      .from('plans')
+      .select('id, created_at, start_date')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (plan) {
+      const timezone = user?.timezone || 'Africa/Lagos';
+      sprintDay = getDayNumber(plan.start_date || new Date(plan.created_at), timezone);
+    }
 
     // 2. Fetch conversation details & extracted profile (name)
     const { data: conversation, error: convError } = await supabase
@@ -49,7 +64,7 @@ export class DailyChatService {
     const tonePref = (user?.tone_preference || 'warm') as 'casual' | 'warm' | 'direct' | 'reflective';
 
     // 3. Fetch daily tasks (yesterday and today)
-    const { data: dailyCards, error: cardsError } = await supabase
+    const { data: dailyCards } = await supabase
       .from('daily_cards')
       .select('*')
       .eq('user_id', userId)
@@ -58,8 +73,8 @@ export class DailyChatService {
     const yesterdayCard = dailyCards?.find((c) => c.day_number === sprintDay - 1);
     const todayCard = dailyCards?.find((c) => c.day_number === sprintDay);
 
-    const yesterdayMove = yesterdayCard?.task || 'No move assigned';
-    const yesterdayStatus = (yesterdayCard?.status || 'missed') as 'done' | 'partial' | 'missed';
+    const yesterdayMove = sprintDay === 1 ? 'None (First day of sprint)' : (yesterdayCard?.task || 'No move assigned');
+    const yesterdayStatus = sprintDay === 1 ? 'none' : ((yesterdayCard?.status || 'missed') as 'done' | 'partial' | 'missed' | 'none');
     const todayMove = todayCard?.task || 'Generating your next move...';
     const todayMoveDuration = todayCard?.duration || '10m';
 
