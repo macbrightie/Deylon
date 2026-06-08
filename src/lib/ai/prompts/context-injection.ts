@@ -7,6 +7,7 @@
 
 export interface ContextInjectionInputs {
   name: string;
+  currentDate: string;
   sprintDay: number;
   streakCurrent: number;
   healthScore: number; // internal only — never revealed to user
@@ -49,6 +50,7 @@ export function buildContextInjection(inputs: ContextInjectionInputs): string {
   return `---
 USER CONTEXT:
 Name: ${inputs.name}
+Today's date: ${inputs.currentDate}
 Sprint day: ${inputs.sprintDay} of 21
 Streak: ${inputs.streakCurrent} days
 Health score: ${inputs.healthScore} (internal — never mention to user)

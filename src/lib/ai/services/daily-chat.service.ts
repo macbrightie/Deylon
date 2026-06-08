@@ -1,5 +1,5 @@
 import { OpenAIService } from './openai';
-import { getDayNumber } from '@/lib/utils/date';
+import { getDayNumber, formatDate } from '@/lib/utils/date';
 import { buildDailyChatPrompt } from '../prompts/daily-chat';
 import { buildChatSystemPrompt } from '../utils/context-builder';
 import { retrieveMemories } from '../utils/memory-retrieval';
@@ -41,8 +41,8 @@ export class DailyChatService {
       .limit(1)
       .maybeSingle();
 
+    const timezone = user?.timezone || 'Africa/Lagos';
     if (plan) {
-      const timezone = user?.timezone || 'Africa/Lagos';
       sprintDay = getDayNumber(plan.start_date || new Date(plan.created_at), timezone);
     }
 
@@ -122,9 +122,11 @@ export class DailyChatService {
     const { core, relevant } = await retrieveMemories(supabase, userId, lastUserMessage);
 
     // 7. Assemble context injection and final prompt
+    const currentDate = formatDate(new Date(), timezone);
     const systemPromptBase = buildDailyChatPrompt(name, sprintDay);
     const chatSystemPrompt = buildChatSystemPrompt(systemPromptBase, {
       name,
+      currentDate,
       sprintDay,
       streakCurrent,
       healthScore,
