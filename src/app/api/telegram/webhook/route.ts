@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { buildWelcomeMessage, formatUserGreeting } from '@/lib/telegram/message';
+import { formatUserGreeting } from '@/lib/telegram/message';
 import { sendMessage } from '@/lib/telegram/bot';
 import { DailyChatService } from '@/lib/ai/services/daily-chat.service';
 import { MemoryService } from '@/lib/ai/services/memory.service';
@@ -26,7 +26,10 @@ interface TelegramUpdate {
 export async function POST(request: NextRequest) {
   // Verify webhook secret
   const secret = request.headers.get('x-telegram-bot-api-secret-token');
+  console.log('[Telegram Webhook] Received request. Headers secret length:', secret?.length || 0, 'Env secret length:', process.env.TELEGRAM_WEBHOOK_SECRET?.length || 0);
+
   if (secret !== process.env.TELEGRAM_WEBHOOK_SECRET) {
+    console.warn('[Telegram Webhook] Unauthorized secret token mismatch.');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

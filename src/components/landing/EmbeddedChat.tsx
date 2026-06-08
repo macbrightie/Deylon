@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { createClient } from "@/lib/supabase/client";
 import { VoiceInput } from "../../../components/chat/VoiceInput";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -519,21 +518,17 @@ export function EmbeddedChat() {
   async function handleEmailSubmit(email: string) {
     setLoadingEmail(true);
     try {
-      const supabase = createClient();
-      
       // Cache their email to pull on successful login
       localStorage.setItem("deylon_onboarding_email", email);
 
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/verify`,
-        },
-      });
+      const { sendMagicLinkOrBypass } = await import('@/lib/supabase/auth-helper');
+      const { error, bypassed } = await sendMagicLinkOrBypass(email, `${window.location.origin}/verify`);
 
       if (error) throw error;
 
-      setChatState("done");
+      if (!bypassed) {
+        setChatState("done");
+      }
     } catch (err) {
       console.error("[Email OTP Link Error]:", err);
       alert("We encountered an issue sending your magic link. Please check your email and try again.");

@@ -5,15 +5,24 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 export function Navbar() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [authStep, setAuthStep] = useState<'email' | 'check'>('email');
   const [loading, setLoading] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const router = useRouter();
+
+  const isDev = process.env.NODE_ENV === 'development' || 
+                (typeof window !== 'undefined' && (
+                  window.location.hostname === 'localhost' || 
+                  window.location.hostname === '127.0.0.1' ||
+                  window.location.hostname.endsWith('vercel.app')
+                ));
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -23,9 +32,24 @@ export function Navbar() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
+    
+    // Fast initial check using getSession
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setUser(session.user);
+      }
+      setAuthLoading(false);
     });
+
+    // Listen to changes (fires when session is loaded or updated)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -39,6 +63,7 @@ export function Navbar() {
   }, [router]);
 
   const handleManageProgress = () => {
+    if (authLoading) return;
     if (user) {
       router.push('/dashboard');
     } else {
@@ -50,18 +75,30 @@ export function Navbar() {
     e.preventDefault();
     setLoading(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/verify`,
-        },
-      });
+      const { sendMagicLinkOrBypass } = await import('@/lib/supabase/auth-helper');
+      const { error, bypassed } = await sendMagicLinkOrBypass(email, `${window.location.origin}/verify`);
       if (error) throw error;
-      setAuthStep('check');
+      
+      if (!bypassed) {
+        setAuthStep('check');
+      }
     } catch (err) {
       console.error('[Magic Link Auth Error]:', err);
       alert('Failed to send magic link. Please check your email address and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDevBypassLogin = async () => {
+    setLoading(true);
+    try {
+      const { sendMagicLinkOrBypass } = await import('@/lib/supabase/auth-helper');
+      const { error } = await sendMagicLinkOrBypass('dev@example.com', `${window.location.origin}/verify`);
+      if (error) throw error;
+    } catch (err) {
+      console.error('[Dev Bypass Error]:', err);
+      alert('Failed to log in via Dev Bypass. Check console for details.');
     } finally {
       setLoading(false);
     }
@@ -181,6 +218,21 @@ export function Navbar() {
                     )}
                   </button>
                 </form>
+                {isDev && (
+                  <div className="w-full pt-4 border-t border-[#1a1a1a]/10 flex flex-col gap-2 mt-4">
+                    <span className="text-[10px] font-mono text-[#6f6f77] text-center uppercase tracking-wider font-semibold select-none">
+                      Development Tools
+                    </span>
+                    <button 
+                      type="button"
+                      onClick={handleDevBypassLogin}
+                      disabled={loading}
+                      className="w-full py-3 rounded-[12px] bg-[#104d3b] hover:bg-[#0d3f30] active:scale-95 disabled:opacity-50 disabled:pointer-events-none text-white text-[13.5px] font-sans font-medium transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer border-none"
+                    >
+                      Bypass & Log In Instantly (dev@example.com)
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="w-full text-center space-y-6 py-4 animate-in fade-in zoom-in-95 duration-200">

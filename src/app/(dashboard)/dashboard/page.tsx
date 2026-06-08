@@ -1947,8 +1947,8 @@ export default function DashboardPage() {
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=+$/, '');
-    
-    const botUrl = `https://t.me/DeylonBot?start=${token}`;
+    const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'DeylonBot';
+    const botUrl = `https://t.me/${botUsername}?start=${token}`;
     window.open(botUrl, '_blank');
   };
 
