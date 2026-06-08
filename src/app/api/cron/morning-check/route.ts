@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
         // 2. Fetch latest active plan
         const { data: plan } = await supabase
           .from('plans')
-          .select('id, created_at')
+          .select('id, created_at, start_date')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(1)
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
 
         if (!plan) return;
 
-        const dayNumber = getDayNumber(new Date(plan.created_at), user.timezone || 'Africa/Lagos');
+        const dayNumber = getDayNumber(plan.start_date || new Date(plan.created_at), user.timezone || 'Africa/Lagos');
         if (dayNumber > 21) return; // Sprint complete
 
         // 3. Fetch today's card if it's pending

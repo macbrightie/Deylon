@@ -14,7 +14,7 @@ export interface ContextInjectionInputs {
   summaryUpdate: string; // 2-sentence user summary from last extraction
 
   yesterdayMove: string;
-  yesterdayStatus: 'done' | 'partial' | 'missed';
+  yesterdayStatus: 'done' | 'partial' | 'missed' | 'none';
   todayMove: string;
   todayMoveDuration: string;
   weeklyMovesCompleted: number; // e.g. 4 (out of 7)

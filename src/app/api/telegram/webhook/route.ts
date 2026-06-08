@@ -5,7 +5,7 @@ import { sendMessage } from '@/lib/telegram/bot';
 import { DailyChatService } from '@/lib/ai/services/daily-chat.service';
 import { MemoryService } from '@/lib/ai/services/memory.service';
 import { OnboardingService } from '@/lib/ai/services/onboarding.service';
-import { getDayNumber } from '@/lib/utils/date';
+import { getDayNumber, getTodayISO, getTomorrowISO } from '@/lib/utils/date';
 
 interface TelegramUpdate {
   update_id: number;
@@ -21,6 +21,20 @@ interface TelegramUpdate {
     };
     text?: string;
   };
+}
+
+async function sendBubbleReply(chatId: number, text: string) {
+  const bubbles = text
+    .split('\n\n')
+    .map((b) => b.trim())
+    .filter((b) => b.length > 0);
+
+  for (let i = 0; i < bubbles.length; i++) {
+    if (i > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+    await sendMessage(chatId, bubbles[i]);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -120,23 +134,81 @@ export async function POST(request: NextRequest) {
           .update({
             preferred_greeting: text,
             display_name: cleanName,
-            telegram_linking_state: 'active'
+            telegram_linking_state: 'awaiting_start_date'
           })
           .eq('id', user.id);
 
-        // Fetch the user's latest plan goal
-        const { data: plan } = await supabase
-          .from('plans')
-          .select('primary_goal')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
         await sendMessage(
           chatId,
-          `✅ <b>Got it, I'll address you as "${text}"!</b>\n\nDeylon will send your daily tasks and check-ins here, starting this evening.\n\n🎯 <b>Your goal:</b> ${plan?.primary_goal ?? 'your goal'}`
+          `👋 Got it, I'll address you as "${cleanName}"!`
         );
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        await sendMessage(
+          chatId,
+          `When would you like to start your 21-day challenge? Reply "today" or "tomorrow".`
+        );
+        return NextResponse.json({ ok: true });
+      }
+
+      // 1.6 Handle awaiting_start_date state
+      if (user.telegram_linking_state === 'awaiting_start_date') {
+        const cleanText = text.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
+        const timezone = user.timezone || 'Africa/Lagos';
+
+        if (cleanText === 'today' || cleanText === 'tomorrow') {
+          const startDate = cleanText === 'today' ? getTodayISO(timezone) : getTomorrowISO(timezone);
+
+          // Fetch the user's latest plan
+          const { data: plan, error: planErr } = await supabase
+            .from('plans')
+            .select('id, primary_goal')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (planErr || !plan) {
+            console.error('[Telegram Webhook] Error fetching active plan:', planErr);
+            await sendMessage(chatId, '⚠️ Plan not found. Please contact support.');
+            return NextResponse.json({ ok: true });
+          }
+
+          // Update the plan with start_date and set linking state to active
+          await supabase
+            .from('plans')
+            .update({ start_date: startDate })
+            .eq('id', plan.id);
+
+          await supabase
+            .from('users')
+            .update({ telegram_linking_state: 'active' })
+            .eq('id', user.id);
+
+          if (cleanText === 'today') {
+            // Fetch today's card to deliver directly (since start date is today, today is day 1)
+            const { data: todayCard } = await supabase
+              .from('daily_cards')
+              .select('*')
+              .eq('user_id', user.id)
+              .eq('plan_id', plan.id)
+              .eq('day_number', 1)
+              .maybeSingle();
+
+            await sendMessage(chatId, `🚀 <b>Your challenge starts TODAY!</b>\n\nHere is your very first daily move:\n\n📌 <b>${todayCard?.task || 'No task assigned'}</b>\n\n⏱ <i>Duration: ${todayCard?.duration || '30 mins'}</i>\n\nYou've got this! Tell me: how much time did you spend on this today?`);
+            
+            // Mark card as revealed
+            if (todayCard) {
+              await supabase
+                .from('daily_cards')
+                .update({ revealed_at: new Date().toISOString() })
+                .eq('id', todayCard.id);
+            }
+          } else {
+            await sendMessage(chatId, `🌅 <b>Your challenge will start tomorrow morning!</b>\n\nI'll deliver your first daily move tomorrow at 10 AM. Rest up and get ready!`);
+          }
+        } else {
+          await sendMessage(chatId, `Please reply with "today" or "tomorrow" to select your start date.`);
+        }
         return NextResponse.json({ ok: true });
       }
       
@@ -145,14 +217,14 @@ export async function POST(request: NextRequest) {
       if (cleanText === 'carry over' || cleanText === 'no') {
         const { data: activePlan } = await supabase
           .from('plans')
-          .select('id, created_at')
+          .select('id, created_at, start_date')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
 
         if (activePlan) {
-          const dayNumber = getDayNumber(new Date(activePlan.created_at), user.timezone || 'Africa/Lagos');
+          const dayNumber = getDayNumber(activePlan.start_date || new Date(activePlan.created_at), user.timezone || 'Africa/Lagos');
           const { data: todayCard } = await supabase
             .from('daily_cards')
             .select('*')
@@ -331,8 +403,8 @@ export async function POST(request: NextRequest) {
           cleanReply = reply.replace(/\[PROFILE_READY\][\s\S]*?\[\/PROFILE_READY\]/g, '').trim();
         }
 
-        // Send Deylon's reply back to user via Telegram
-        await sendMessage(chatId, cleanReply);
+        // Send Deylon's reply back to user via Telegram split into bubbles
+        await sendBubbleReply(chatId, cleanReply);
       } else {
         // DAILY COACHING SPRINT CHAT FLOW
         let { data: conversation } = await supabase
@@ -395,8 +467,8 @@ export async function POST(request: NextRequest) {
           .update({ messages: finalMessages })
           .eq('id', conversation.id);
 
-        // Send Deylon's response to the user via Telegram
-        await sendMessage(chatId, reply);
+        // Send Deylon's response to the user via Telegram split into bubbles
+        await sendBubbleReply(chatId, reply);
 
         // Run background processes concurrently
         try {

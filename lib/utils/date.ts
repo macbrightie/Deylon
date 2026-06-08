@@ -30,16 +30,35 @@ export function formatDate(date: Date, timezone: string): string {
  * Calculates how many days have elapsed since the plan start date.
  * Returns 1-indexed day number (day 1 = plan start day).
  */
-export function getDayNumber(planStartDate: Date, timezone: string): number {
+export function getDayNumber(planStartDate: Date | string, timezone: string): number {
   const today = getTodayInTimezone(timezone);
-  const start = new Date(
-    planStartDate.getFullYear(),
-    planStartDate.getMonth(),
-    planStartDate.getDate()
-  );
+  let start: Date;
+  if (typeof planStartDate === 'string') {
+    const [year, month, day] = planStartDate.split('-').map(Number);
+    start = new Date(year, month - 1, day);
+  } else {
+    start = new Date(
+      planStartDate.getFullYear(),
+      planStartDate.getMonth(),
+      planStartDate.getDate()
+    );
+  }
   const diffMs = today.getTime() - start.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
   return Math.max(1, diffDays + 1);
+}
+
+/**
+ * Returns an ISO date string (YYYY-MM-DD) for tomorrow in a given timezone.
+ */
+export function getTomorrowISO(timezone: string): string {
+  const today = getTodayInTimezone(timezone);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  const year = tomorrow.getFullYear();
+  const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+  const day = String(tomorrow.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 /**
