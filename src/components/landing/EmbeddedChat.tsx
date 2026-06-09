@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { VoiceInput } from "../../../components/chat/VoiceInput";
+import { createClient } from '@/lib/supabase/client';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -14,38 +15,176 @@ interface Message {
   id: string;
   role: "deylon" | "me";
   text: string;
+  metadata?: {
+    liked?: boolean;
+    disliked?: boolean;
+    copied?: boolean;
+    listened?: boolean;
+    voiceInput?: boolean;
+  };
 }
 
 // ─── Reaction icons ──────────────────────────────────────────────────────────
 
-function ReactionBar() {
-  const [active, setActive] = useState<string | null>(null);
+interface ReactionBarProps {
+  message: Message;
+  onUpdateMetadata: (key: string, value: boolean) => void;
+}
 
-  const icons = [
-    { id: "copy", src: "/UI-design-and-element/iconsax-copy.svg", alt: "Copy" },
-    { id: "volume", src: "/UI-design-and-element/iconsax-volume-high.svg", alt: "Volume" },
-    { id: "like", src: "/UI-design-and-element/iconsax-like.svg", alt: "Like" },
-    { id: "dislike", src: "/UI-design-and-element/iconsax-dislike.svg", alt: "Dislike" },
-  ];
+function ReactionBar({ message, onUpdateMetadata }: ReactionBarProps) {
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const liked = message.metadata?.liked || false;
+  const disliked = message.metadata?.disliked || false;
+  const copied = message.metadata?.copied || false;
+  const listened = message.metadata?.listened || false;
+
+  useEffect(() => {
+    // Reset play state if SpeechSynthesis stops
+    const checkSpeechState = () => {
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        if (!window.speechSynthesis.speaking && isPlaying) {
+          setIsPlaying(false);
+        }
+      }
+    };
+
+    const interval = setInterval(checkSpeechState, 500);
+    return () => clearInterval(interval);
+  }, [isPlaying]);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(message.text);
+      onUpdateMetadata("copied", true);
+    } catch (err) {
+      console.error("Failed to copy text:", err);
+    }
+  };
+
+  const handleSpeech = () => {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      alert("Text-to-speech is not supported in this browser.");
+      return;
+    }
+
+    if (window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+      setIsPlaying(false);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(message.text);
+    
+    // Check if the message is in French using a simple regex for French accents
+    const isFrench = /[éàèùâêîôûç]/i.test(message.text);
+    
+    // Find free native browser voice
+    const voices = window.speechSynthesis.getVoices();
+    const voice = voices.find((v) => 
+      isFrench 
+        ? v.lang.startsWith("fr") 
+        : v.lang.startsWith("en")
+    );
+
+    if (voice) {
+      utterance.voice = voice;
+    } else {
+      utterance.lang = isFrench ? "fr-FR" : "en-US";
+    }
+
+    utterance.onend = () => {
+      setIsPlaying(false);
+    };
+
+    utterance.onerror = () => {
+      setIsPlaying(false);
+    };
+
+    setIsPlaying(true);
+    onUpdateMetadata("listened", true);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const handleLike = () => {
+    onUpdateMetadata("liked", !liked);
+    if (!liked) {
+      onUpdateMetadata("disliked", false);
+    }
+  };
+
+  const handleDislike = () => {
+    onUpdateMetadata("disliked", !disliked);
+    if (!disliked) {
+      onUpdateMetadata("liked", false);
+    }
+  };
 
   return (
-    <div className="flex items-center gap-4 pt-2 pb-1">
-      {icons.map((icon) => (
-        <button
-          key={icon.id}
-          onClick={() => setActive(active === icon.id ? null : icon.id)}
-          className={`w-[18px] h-[18px] opacity-40 hover:opacity-100 transition-all duration-150 relative ${
-            active === icon.id ? "opacity-100 scale-110" : ""
-          }`}
-        >
-          <Image
-            src={icon.src}
-            alt={icon.alt}
-            fill
-            className="object-contain"
-          />
-        </button>
-      ))}
+    <div className="flex items-center gap-4 pt-2 pb-1 select-none">
+      {/* Copy Button */}
+      <button
+        onClick={handleCopy}
+        className={`w-[18px] h-[18px] hover:opacity-100 transition-all duration-150 relative ${
+          copied ? "opacity-100 text-[#104d3b] scale-110" : "opacity-40"
+        }`}
+        title={copied ? "Copied!" : "Copy message"}
+      >
+        <Image
+          src="/UI-design-and-element/iconsax-copy.svg"
+          alt="Copy"
+          fill
+          className={`object-contain ${copied ? "brightness-50 sepia tone-[green]" : ""}`}
+        />
+      </button>
+
+      {/* Volume (Speech) Button */}
+      <button
+        onClick={handleSpeech}
+        className={`w-[18px] h-[18px] hover:opacity-100 transition-all duration-150 relative ${
+          isPlaying ? "opacity-100 text-[#104d3b] scale-110 animate-pulse" : (listened ? "opacity-80" : "opacity-40")
+        }`}
+        title={isPlaying ? "Stop listening" : "Listen to message"}
+      >
+        <Image
+          src="/UI-design-and-element/iconsax-volume-high.svg"
+          alt="Volume"
+          fill
+          className="object-contain"
+        />
+      </button>
+
+      {/* Like Button */}
+      <button
+        onClick={handleLike}
+        className={`w-[18px] h-[18px] hover:opacity-100 transition-all duration-150 relative ${
+          liked ? "opacity-100 scale-110" : "opacity-40"
+        }`}
+        title="Like Deylon's reply"
+      >
+        <Image
+          src="/UI-design-and-element/iconsax-like.svg"
+          alt="Like"
+          fill
+          className={`object-contain ${liked ? "brightness-50 sepia hue-rotate-[90deg]" : ""}`}
+        />
+      </button>
+
+      {/* Dislike Button */}
+      <button
+        onClick={handleDislike}
+        className={`w-[18px] h-[18px] hover:opacity-100 transition-all duration-150 relative ${
+          disliked ? "opacity-100 scale-110" : "opacity-40"
+        }`}
+        title="Dislike Deylon's reply"
+      >
+        <Image
+          src="/UI-design-and-element/iconsax-dislike.svg"
+          alt="Dislike"
+          fill
+          className={`object-contain ${disliked ? "brightness-50 sepia hue-rotate-[320deg]" : ""}`}
+        />
+      </button>
     </div>
   );
 }
@@ -81,15 +220,12 @@ function Spinner() {
 
 // ─── Chat message ────────────────────────────────────────────────────────────
 
-function ChatMessage({
-  message,
-  isLast,
-  showReactions,
-}: {
+interface ChatMessageProps {
   message: Message;
-  isLast: boolean;
-  showReactions: boolean;
-}) {
+  onUpdateMetadata: (key: string, value: boolean) => void;
+}
+
+function ChatMessage({ message, onUpdateMetadata }: ChatMessageProps) {
   const isDeylon = message.role === "deylon";
 
   return (
@@ -97,7 +233,7 @@ function ChatMessage({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="space-y-1"
+      className="space-y-1 text-left"
     >
       <p
         className={`text-[11px] font-sans font-semibold tracking-wide mb-1 ${
@@ -116,7 +252,7 @@ function ChatMessage({
           {message.text}
         </p>
       </div>
-      {isLast && showReactions && <ReactionBar />}
+      {isDeylon && <ReactionBar message={message} onUpdateMetadata={onUpdateMetadata} />}
     </motion.div>
   );
 }
@@ -128,6 +264,8 @@ interface ChatPanelProps {
   messages: Message[];
   onSend: (text: string) => Promise<void>;
   generating: boolean;
+  onUpdateMetadata: (id: string, key: string, value: boolean) => void;
+  onVoiceDictation?: () => void;
 }
 
 function ChatPanel({
@@ -135,6 +273,8 @@ function ChatPanel({
   messages,
   onSend,
   generating,
+  onUpdateMetadata,
+  onVoiceDictation,
 }: ChatPanelProps) {
   const [inputValue, setInputValue] = useState("");
   const [isListening, setIsListening] = useState(false);
@@ -173,12 +313,11 @@ function ChatPanel({
         className="flex-1 overflow-y-auto pt-6 pb-2 space-y-5 scrollbar-none"
       >
         <div className="w-full px-[12px] md:w-[60%] md:px-0 mx-auto space-y-5">
-        {messages.map((msg, i) => (
+        {messages.map((msg) => (
           <ChatMessage
             key={msg.id}
             message={msg}
-            isLast={i === messages.length - 1}
-            showReactions={state === "chatting"}
+            onUpdateMetadata={(key, val) => onUpdateMetadata(msg.id, key, val)}
           />
         ))}
         {generating && <Spinner />}
@@ -263,6 +402,7 @@ function ChatPanel({
               ) : (
                 <VoiceInput
                   onTranscript={(text) => {
+                    if (onVoiceDictation) onVoiceDictation();
                     setInputValue(baseValueRef.current ? `${baseValueRef.current} ${text}` : text);
                   }}
                   onListeningChange={(listening) => {
@@ -464,6 +604,7 @@ export function EmbeddedChat({
   const [generating, setGenerating] = useState(false);
   const [loadingEmail, setLoadingEmail] = useState(false);
   const [generatingPlan, setGeneratingPlan] = useState(false);
+  const voiceUsedRef = useRef(false);
 
   useEffect(() => {
     if (initialMessages && initialMessages.length > 0) {
@@ -479,7 +620,9 @@ export function EmbeddedChat({
       id: Date.now().toString(),
       role: "me",
       text: text,
+      metadata: voiceUsedRef.current ? { voiceInput: true } : undefined,
     };
+    voiceUsedRef.current = false; // Reset voice indicator
 
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
@@ -491,6 +634,7 @@ export function EmbeddedChat({
       const payloadMessages = newMessages.map((m) => ({
         role: m.role === 'deylon' ? 'assistant' as const : 'user' as const,
         content: m.text,
+        metadata: m.metadata,
       }));
 
       const res = await fetch("/api/chat", {
@@ -516,9 +660,15 @@ export function EmbeddedChat({
         text: data.message || "I'm listening. Tell me more.",
       };
 
-      setMessages((prev) => [...prev, assistantMsg]);
+      const finalMessages = [...newMessages, assistantMsg];
+      setMessages(finalMessages);
 
-      // If onboarding is complete, save transcript and advance to Email capture
+      // Save transcript changes locally for anonymous users
+      if (!isDashboard) {
+        localStorage.setItem("deylon_onboarding_transcript", JSON.stringify(finalMessages));
+      }
+
+      // If onboarding is complete, advance to the final stage
       if (data.complete) {
         if (isDashboard && onCompleteOnboarding && conversationId) {
           setGeneratingPlan(true);
@@ -526,7 +676,7 @@ export function EmbeddedChat({
             onCompleteOnboarding(conversationId);
           }, 2000);
         } else {
-          localStorage.setItem("deylon_onboarding_transcript", JSON.stringify(newMessages.concat(assistantMsg)));
+          localStorage.setItem("deylon_onboarding_transcript", JSON.stringify(finalMessages));
           setTimeout(() => {
             setChatState("email");
           }, 2500); // Elegant delay so the user can digest the final Deylon onboarding message
@@ -565,6 +715,48 @@ export function EmbeddedChat({
     } finally {
       setLoadingEmail(false);
     }
+  }
+
+  async function handleUpdateMessageMetadata(messageId: string, key: string, value: boolean) {
+    let updatedMessages: Message[] = [];
+    setMessages((prev) => {
+      updatedMessages = prev.map((msg) => {
+        if (msg.id === messageId) {
+          return {
+            ...msg,
+            metadata: {
+              ...msg.metadata,
+              [key]: value,
+            },
+          };
+        }
+        return msg;
+      });
+      return updatedMessages;
+    });
+
+    // Sync state to local storage or cloud DB
+    setTimeout(async () => {
+      if (!isDashboard) {
+        localStorage.setItem("deylon_onboarding_transcript", JSON.stringify(updatedMessages));
+      } else if (isDashboard && conversationId) {
+        try {
+          const supabase = createClient();
+          const payloadMessages = updatedMessages.map((m) => ({
+            role: m.role === "deylon" ? ("assistant" as const) : ("user" as const),
+            content: m.text,
+            metadata: m.metadata,
+          }));
+
+          await supabase
+            .from("conversations")
+            .update({ messages: payloadMessages })
+            .eq("id", conversationId);
+        } catch (dbErr) {
+          console.error("[EmbeddedChat DB Sync Error]:", dbErr);
+        }
+      }
+    }, 50);
   }
 
   const content = (
@@ -644,6 +836,10 @@ export function EmbeddedChat({
                 messages={messages}
                 onSend={handleSend}
                 generating={generating}
+                onUpdateMetadata={handleUpdateMessageMetadata}
+                onVoiceDictation={() => {
+                  voiceUsedRef.current = true;
+                }}
               />
             </motion.div>
           ) : chatState === "email" ? (
@@ -717,4 +913,3 @@ export function EmbeddedChat({
     </section>
   );
 }
-
