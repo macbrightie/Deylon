@@ -58,7 +58,7 @@ export function Hero() {
   }, [currentText, isDeleting, wordIndex]);
 
   return (
-    <section className="flex flex-col items-center justify-center min-h-[100dvh] pt-24 pb-6 px-8 max-w-7xl mx-auto w-full text-center">
+    <section className="flex flex-col items-center justify-center min-h-[100dvh] py-16 px-8 max-w-7xl mx-auto w-full text-center">
       <div className="max-w-5xl flex flex-col items-center">
         {/* Heading with smooth Typing animation */}
         <h1 className="font-serif leading-[1.2] tracking-tight">
