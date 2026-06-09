@@ -1405,6 +1405,7 @@ interface SettingsModalProps {
   defaultTab?: 'general' | 'privacy';
   telegramConnected: boolean;
   onToggleTelegram: () => void;
+  onDisconnectTelegram: () => void;
   whatsappConnected: boolean;
   onToggleWhatsApp: () => void;
   activeLanguage: string;
@@ -1419,6 +1420,7 @@ function SettingsModal({
   defaultTab = 'general',
   telegramConnected,
   onToggleTelegram,
+  onDisconnectTelegram,
   whatsappConnected,
   onToggleWhatsApp,
   activeLanguage,
@@ -1473,8 +1475,10 @@ function SettingsModal({
 
               {/* Telegram Bar */}
               <div 
-                onClick={onToggleTelegram}
-                className="mt-2 flex items-center justify-between bg-[#1E1E22] hover:bg-[#2A2A2E] text-white pt-4 pb-4 px-4 rounded-[16px] cursor-pointer transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] shadow-sm select-none"
+                onClick={telegramConnected ? undefined : onToggleTelegram}
+                className={`mt-2 flex items-center justify-between bg-[#1E1E22] text-white pt-4 pb-4 px-4 rounded-[16px] shadow-sm select-none ${
+                  telegramConnected ? '' : 'hover:bg-[#2A2A2E] cursor-pointer transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]'
+                }`}
               >
                 <div className="flex items-center gap-3.5">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0 shadow-sm">
@@ -1491,13 +1495,23 @@ function SettingsModal({
                     {t('connect_telegram', langKey)}
                   </span>
                 </div>
-                <div>
-                  {telegramConnected && (
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-[11px] font-sans font-medium">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#3CD070] shadow-glow" />
-                      {t('connected', langKey)}
-                    </div>
-                  )}
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  {telegramConnected ? (
+                    <>
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-[11px] font-sans font-medium">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#3CD070] shadow-glow" />
+                        {t('connected', langKey)}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="h-7 px-2.5 rounded-[8px] bg-red-500/10 hover:bg-red-500/20 text-red-400 border-none shadow-none text-[11px] font-sans font-medium cursor-pointer"
+                        onClick={onDisconnectTelegram}
+                      >
+                        Disconnect
+                      </Button>
+                    </>
+                  ) : null}
                 </div>
               </div>
 
@@ -1952,6 +1966,31 @@ export default function DashboardPage() {
     window.open(botUrl, '_blank');
   };
 
+  const handleDisconnectTelegram = async () => {
+    if (!user) return;
+    const confirmDisconnect = confirm("Are you sure you want to disconnect your Telegram account from Deylon?");
+    if (!confirmDisconnect) return;
+
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('users')
+        .update({
+          telegram_chat_id: null,
+          telegram_linking_state: null,
+          preferred_greeting: null
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setTelegramConnected(false);
+    } catch (err) {
+      console.error('[handleDisconnectTelegram Error]:', err);
+      alert('Failed to disconnect Telegram. Please try again.');
+    }
+  };
+
   const getCardForDay = (dayNum: number) => {
     return cards.find((c) => c.day_number === dayNum);
   };
@@ -2201,6 +2240,7 @@ export default function DashboardPage() {
         defaultTab={settingsDefaultTab}
         telegramConnected={telegramConnected}
         onToggleTelegram={handleToggleTelegram}
+        onDisconnectTelegram={handleDisconnectTelegram}
         whatsappConnected={whatsappConnected}
         onToggleWhatsApp={() => setWhatsappConnected(!whatsappConnected)}
         activeLanguage={activeLanguage}
