@@ -433,9 +433,23 @@ function DashboardPanel() {
 
 // ─── Main export ─────────────────────────────────────────────────────────────
 
-export function EmbeddedChat() {
+interface EmbeddedChatProps {
+  userId?: string;
+  conversationId?: string;
+  initialMessages?: Message[];
+  isDashboard?: boolean;
+  onCompleteOnboarding?: (conversationId: string) => void;
+}
+
+export function EmbeddedChat({
+  userId,
+  conversationId,
+  initialMessages,
+  isDashboard = false,
+  onCompleteOnboarding,
+}: EmbeddedChatProps) {
   const [chatState, setChatState] = useState<ChatState>("idle");
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<Message[]>(initialMessages || [
     {
       id: "m1",
       role: "deylon",
@@ -449,6 +463,14 @@ export function EmbeddedChat() {
   ]);
   const [generating, setGenerating] = useState(false);
   const [loadingEmail, setLoadingEmail] = useState(false);
+  const [generatingPlan, setGeneratingPlan] = useState(false);
+
+  useEffect(() => {
+    if (initialMessages && initialMessages.length > 0) {
+      setMessages(initialMessages);
+      setChatState("chatting");
+    }
+  }, [initialMessages]);
 
   async function handleSend(text: string) {
     if (!text.trim() || generating) return;
@@ -478,6 +500,7 @@ export function EmbeddedChat() {
         },
         body: JSON.stringify({
           messages: payloadMessages,
+          conversationId: conversationId,
         }),
       });
 
@@ -497,10 +520,17 @@ export function EmbeddedChat() {
 
       // If onboarding is complete, save transcript and advance to Email capture
       if (data.complete) {
-        localStorage.setItem("deylon_onboarding_transcript", JSON.stringify(newMessages.concat(assistantMsg)));
-        setTimeout(() => {
-          setChatState("email");
-        }, 2500); // Elegant delay so the user can digest the final Deylon onboarding message
+        if (isDashboard && onCompleteOnboarding && conversationId) {
+          setGeneratingPlan(true);
+          setTimeout(() => {
+            onCompleteOnboarding(conversationId);
+          }, 2000);
+        } else {
+          localStorage.setItem("deylon_onboarding_transcript", JSON.stringify(newMessages.concat(assistantMsg)));
+          setTimeout(() => {
+            setChatState("email");
+          }, 2500); // Elegant delay so the user can digest the final Deylon onboarding message
+        }
       }
     } catch (error) {
       console.error("[EmbeddedChat Chat Error]:", error);
@@ -537,6 +567,121 @@ export function EmbeddedChat() {
     }
   }
 
+  const content = (
+    <div className="max-w-[960px] mx-auto rounded-[28px] bg-[#1a1a1a] overflow-hidden shadow-2xl relative">
+      {/* Top-cont asset */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/4 min-w-[160px] z-10">
+        <div className="relative w-full">
+          <Image
+            src="/UI-design-and-element/Top-cont.webp"
+            alt=""
+            width={400}
+            height={100}
+            className="w-full h-auto"
+            priority
+          />
+          <span
+            className="absolute inset-0 flex items-center justify-center text-[9px] md:text-[11px] uppercase pb-[18px] text-white/55"
+            style={{
+              fontFamily: 'var(--font-haffer-xh-mono)',
+              fontWeight: 500,
+              letterSpacing: '0.22em',
+            }}
+          >
+            Talk to Deylon
+          </span>
+        </div>
+      </div>
+
+      {/* Top dark header */}
+      <div className="px-8 pt-16 pb-8 relative">
+        <div className="text-center">
+          <p className="text-[20px] md:text-[24px] font-sans text-white leading-snug">
+            <span className="text-white/40">Start here.</span>{" "}
+            <span className="text-white font-medium">
+              Your plan is 5 minutes away.
+            </span>
+          </p>
+          <p className="mt-3 text-[12px] font-mono tracking-wide">
+            <span className="text-[#BDBDBF]">Take your time, Talk freely.</span>{" "}
+            <span className="text-white font-semibold">
+              Deylon will handle the rest.
+            </span>
+          </p>
+        </div>
+      </div>
+
+      {/* Inner white chat card */}
+      <div className="mx-[2px] mb-[2px] rounded-b-[26px] rounded-t-[20px] bg-white overflow-hidden h-[450px] md:h-[500px] flex flex-col">
+        <AnimatePresence mode="wait">
+          {generatingPlan ? (
+            <motion.div
+              key="generatingPlan"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex-1 flex flex-col items-center justify-center p-8 text-center"
+            >
+              <svg className="animate-spin w-10 h-10 text-[#104d3b] mb-4" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+              <p className="text-[16px] font-sans font-medium text-[#1a1a1a]">
+                Preparing to build your plan...
+              </p>
+            </motion.div>
+          ) : (chatState === "idle" || chatState === "chatting") ? (
+            <motion.div
+              key="chat"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="flex flex-col flex-1 h-full"
+            >
+              <ChatPanel
+                state={chatState === "idle" ? "idle" : "chatting"}
+                messages={messages}
+                onSend={handleSend}
+                generating={generating}
+              />
+            </motion.div>
+          ) : chatState === "email" ? (
+            <motion.div
+              key="email"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="flex flex-col flex-1 relative pt-10"
+            >
+              <EmailPanel onSubmit={handleEmailSubmit} loading={loadingEmail} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="done"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="flex flex-col flex-1 relative pt-10"
+            >
+              <DashboardPanel />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+
+  if (isDashboard) {
+    return (
+      <div className="w-full">
+        {content}
+      </div>
+    );
+  }
+
   return (
     <section
       id="embedded-chat"
@@ -549,99 +694,7 @@ export function EmbeddedChat() {
         </h2>
       </div>
 
-      {/* Outer dark container */}
-      <div className="max-w-[960px] mx-auto rounded-[28px] bg-[#1a1a1a] overflow-hidden shadow-2xl relative">
-        {/* Top-cont asset */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/4 min-w-[160px] z-10">
-          <div className="relative w-full">
-            <Image
-              src="/UI-design-and-element/Top-cont.webp"
-              alt=""
-              width={400}
-              height={100}
-              className="w-full h-auto"
-              priority
-            />
-            <span
-              className="absolute inset-0 flex items-center justify-center text-[9px] md:text-[11px] uppercase pb-[18px] text-white/55"
-              style={{
-                fontFamily: 'var(--font-haffer-xh-mono)',
-                fontWeight: 500,
-                letterSpacing: '0.22em',
-              }}
-            >
-              Talk to Deylon
-            </span>
-          </div>
-        </div>
-
-        {/* Top dark header */}
-        <div className="px-8 pt-16 pb-8 relative">
-          <div className="text-center">
-            <p className="text-[20px] md:text-[24px] font-sans text-white leading-snug">
-              <span className="text-white/40">Start here.</span>{" "}
-              <span className="text-white font-medium">
-                Your plan is 5 minutes away.
-              </span>
-            </p>
-            <p className="mt-3 text-[12px] font-mono tracking-wide">
-              <span className="text-[#BDBDBF]">Take your time, Talk freely.</span>{" "}
-              <span className="text-white font-semibold">
-                Deylon will handle the rest.
-              </span>
-            </p>
-          </div>
-        </div>
-
-        {/* Inner white chat card */}
-        <div className="mx-[2px] mb-[2px] rounded-b-[26px] rounded-t-[20px] bg-white overflow-hidden h-[450px] md:h-[500px] flex flex-col">
-          <AnimatePresence mode="wait">
-            {(chatState === "idle" || chatState === "chatting") && (
-              <motion.div
-                key="chat"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.25 }}
-                className="flex flex-col flex-1 h-full"
-              >
-                <ChatPanel
-                  state={chatState === "idle" ? "idle" : "chatting"}
-                  messages={messages}
-                  onSend={handleSend}
-                  generating={generating}
-                />
-              </motion.div>
-            )}
-
-            {chatState === "email" && (
-              <motion.div
-                key="email"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -16 }}
-                transition={{ duration: 0.35, ease: "easeOut" }}
-                className="flex flex-col flex-1 relative pt-10"
-              >
-                <EmailPanel onSubmit={handleEmailSubmit} loading={loadingEmail} />
-              </motion.div>
-            )}
-
-            {chatState === "done" && (
-              <motion.div
-                key="done"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.35, ease: "easeOut" }}
-                className="flex flex-col flex-1 relative pt-10"
-              >
-                <DashboardPanel />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
+      {content}
 
       {/* Dev state switcher */}
       {process.env.NODE_ENV === "development" && (

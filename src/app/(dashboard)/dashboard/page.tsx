@@ -4,6 +4,7 @@ import { GodModeWidget } from '@/components/admin/GodModeWidget';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -12,6 +13,15 @@ import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/Button';
 import { Label } from '@/components/ui/label';
 import { PrivacyModal } from '@/components/ui/PrivacyModal';
+import { EmbeddedChat } from '@/components/landing/EmbeddedChat';
+
+const mapDbMessagesToChat = (dbMessages: any[]): any[] => {
+  return (dbMessages || []).map((m: any, idx: number) => ({
+    id: `db-${idx}-${Date.now()}`,
+    role: m.role === 'assistant' ? 'deylon' : 'me',
+    text: m.content || '',
+  }));
+};
  
 type ViewMode = 'Grid' | 'Swipe';
  
@@ -1586,9 +1596,65 @@ function SettingsModal({
   );
 }
 
+interface TelegramConnectModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConnect: () => void;
+}
+
+function TelegramConnectModal({ isOpen, onClose, onConnect }: TelegramConnectModalProps) {
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-[440px] p-8 flex flex-col items-center text-center">
+        <DialogHeader className="w-full p-0 pb-4 text-center items-center">
+          <div className="w-16 h-16 rounded-full bg-[#24A1DE]/10 flex items-center justify-center mb-4">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM16.2 8.75L14.7 15.8C14.6 16.3 14.3 16.4 13.9 16.2L11.6 14.5L10.5 15.6C10.4 15.7 10.3 15.8 10.1 15.8L10.25 13.6L14.25 9.98C14.42 9.83 14.21 9.75 13.99 9.9L9.04 13.01L6.9 12.34C6.43 12.2 6.42 11.87 7 11.64L15.35 8.42C15.74 8.27 16.08 8.51 16.2 8.75Z" fill="#24A1DE" />
+            </svg>
+          </div>
+          <DialogTitle className="text-[22px] font-sans font-semibold tracking-tight text-[#1a1a1a]">
+            Connect to Telegram
+          </DialogTitle>
+          <DialogDescription className="text-[14px] text-[#6f6f77] font-sans leading-relaxed mt-2 max-w-sm">
+            Deylon works best over Telegram. Connect your account to receive your daily challenges, timing checks, and to talk with Deylon on the go.
+          </DialogDescription>
+        </DialogHeader>
+
+        <p className="text-[12px] font-sans text-[#8e8e93] leading-relaxed mb-6 max-w-xs">
+          This links your chat session and starts your personalized daily notifications.
+        </p>
+
+        {/* Action Buttons */}
+        <div className="w-full flex flex-col gap-3">
+          <Button 
+            variant="default" 
+            onClick={() => {
+              onConnect();
+              onClose();
+            }}
+            className="w-full py-3 h-auto bg-[#1a1a1a] hover:bg-[#333] text-white rounded-[12px] font-sans font-medium text-[14px]"
+          >
+            Connect Telegram
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={onClose}
+            className="w-full py-3 h-auto border border-black/10 hover:bg-black/5 text-[#1a1a1a] rounded-[12px] font-sans font-medium text-[14px]"
+          >
+            Maybe later
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const [onboardingConvId, setOnboardingConvId] = useState<string | null>(null);
+  const [onboardingMessages, setOnboardingMessages] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('Grid');
   const [activePage, setActivePage] = useState(1);
   const [cardsPerPage, setCardsPerPage] = useState(3);
@@ -1616,6 +1682,7 @@ export default function DashboardPage() {
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [showRoadmap, setShowRoadmap] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showTelegramPrompt, setShowTelegramPrompt] = useState(false);
 
   // Profile Form States
   const [profileName, setProfileName] = useState('Bright Mac');
@@ -1742,6 +1809,53 @@ export default function DashboardPage() {
             setActiveDay(dayNum);
             
             setActivePage(Math.min(7, Math.ceil(dayNum / 3)));
+          }
+
+          // Trigger Telegram connect prompt if not connected and not shown in this session yet
+          if (userProfile && !userProfile.telegram_chat_id) {
+            const hasShownPrompt = localStorage.getItem(`deylon_telegram_prompt_shown_${authUser.id}`);
+            if (!hasShownPrompt) {
+              setTimeout(() => {
+                setShowTelegramPrompt(true);
+                localStorage.setItem(`deylon_telegram_prompt_shown_${authUser.id}`, 'true');
+              }, 1500);
+            }
+          }
+        } else {
+          // Fetch latest incomplete onboarding conversation
+          const { data: latestConv } = await supabase
+            .from('conversations')
+            .select('*')
+            .eq('user_id', authUser.id)
+            .eq('completed', false)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          let currentConv = latestConv;
+
+          if (!currentConv) {
+            // Create a new incomplete conversation for this user
+            const { data: newConv, error: newConvError } = await supabase
+              .from('conversations')
+              .insert({
+                user_id: authUser.id,
+                messages: [],
+                completed: false
+              })
+              .select()
+              .single();
+
+            if (!newConvError && newConv) {
+              currentConv = newConv;
+            }
+          }
+
+          if (currentConv) {
+            setOnboardingConvId(currentConv.id);
+            if (currentConv.messages && currentConv.messages.length > 0) {
+              setOnboardingMessages(mapDbMessagesToChat(currentConv.messages));
+            }
           }
         }
 
@@ -2010,6 +2124,107 @@ export default function DashboardPage() {
   }
   const langKey = activeLanguage === 'French' ? 'French' : 'English';
 
+  if (!plan) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <DashboardNav 
+          onOpenSettings={() => { setSettingsDefaultTab('general'); setShowSettingsModal(true); }}
+          onOpenProfile={() => setShowProfileModal(true)}
+          telegramConnected={telegramConnected}
+          onToggleTelegram={handleToggleTelegram}
+          profilePhoto={profilePhoto}
+        />
+
+        <main className="flex-1 px-6 md:px-8 pb-10 flex flex-col items-center justify-center">
+          <div className="max-w-[960px] w-full mx-auto mt-6 flex-1 flex flex-col justify-center">
+            <div className="text-center mb-10">
+              <h1 className="font-sans text-[24px] md:text-[32px] font-medium text-[#1a1a1a] tracking-tight">
+                We noticed you haven't spoken with Deylon about your goals yet.
+              </h1>
+              <p className="font-sans text-[15px] md:text-[17px] text-[#4e4e55] mt-2">
+                Please do that here to finish setting up your daily plan.
+              </p>
+            </div>
+            
+            <EmbeddedChat 
+              userId={user?.id}
+              conversationId={onboardingConvId || undefined}
+              initialMessages={onboardingMessages}
+              isDashboard={true}
+              onCompleteOnboarding={(convId) => {
+                router.push(`/building?conversationId=${convId}`);
+              }}
+            />
+          </div>
+        </main>
+
+        <footer className="px-6 md:px-8 py-5 flex items-center justify-between text-[11px] font-sans text-[#1a1a1a]/30 border-t border-black/5">
+          <div className="flex items-center gap-4">
+            <span className="font-sans">© Deylon 2026</span>
+            <span className="text-[#1a1a1a]/15">·</span>
+            <button 
+              onClick={(e) => {
+                e.preventDefault();
+                setShowPrivacyModal(true);
+              }}
+              className="hover:text-[#1a1a1a]/55 transition-colors text-left font-sans outline-none"
+            >
+              Privacy.
+            </button>
+          </div>
+          <div className="flex items-center gap-4">
+            <a href="#" aria-label="Instagram" className="hover:opacity-100 transition-opacity">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="#1a1a1a" fillOpacity="0.65">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0 2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 3.674a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+              </svg>
+            </a>
+            <a href="#" aria-label="X" className="hover:opacity-100 transition-opacity">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#1a1a1a" fillOpacity="0.65">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+            </a>
+            <a href="#" aria-label="Telegram" className="hover:opacity-100 transition-opacity">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="#1a1a1a" fillOpacity="0.65">
+                <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-.995-.651-.35-1.009.217-1.594.149-.155 2.732-2.506 2.782-2.72a.207.207 0 0 0-.049-.184c-.048-.047-.117-.031-.168-.019-.072.016-1.22.776-3.447 2.279-.326.224-.622.333-.887.328-.292-.006-.854-.165-1.272-.301-.513-.168-.92-.257-.884-.542.018-.15.225-.304.62-.465 2.429-1.058 4.049-1.756 4.858-2.095 2.311-.96 2.791-1.127 3.103-1.132z"/>
+              </svg>
+            </a>
+          </div>
+        </footer>
+
+        {/* Dynamic Modals Overlays */}
+        <ProfileModal 
+          isOpen={showProfileModal}
+          onClose={() => setShowProfileModal(false)}
+          displayName={profileName}
+          username={profileUsername}
+          userId={user?.id}
+          onSave={handleSaveProfile}
+        />
+
+        <SettingsModal 
+          isOpen={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+          defaultTab={settingsDefaultTab}
+          telegramConnected={telegramConnected}
+          onToggleTelegram={handleToggleTelegram}
+          onDisconnectTelegram={handleDisconnectTelegram}
+          whatsappConnected={whatsappConnected}
+          onToggleWhatsApp={() => setWhatsappConnected(!whatsappConnected)}
+          activeLanguage={activeLanguage}
+          onChangeLanguage={(lang) => setActiveLanguage(lang)}
+          onExportData={handleExportData}
+          onResetAccount={handleResetAccount}
+        />
+
+        <PrivacyModal 
+          isOpen={showPrivacyModal}
+          onClose={() => setShowPrivacyModal(false)}
+        />
+        <GodModeWidget />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <DashboardNav 
@@ -2275,6 +2490,11 @@ export default function DashboardPage() {
       <PrivacyModal 
         isOpen={showPrivacyModal}
         onClose={() => setShowPrivacyModal(false)}
+      />
+      <TelegramConnectModal 
+        isOpen={showTelegramPrompt}
+        onClose={() => setShowTelegramPrompt(false)}
+        onConnect={handleToggleTelegram}
       />
       <GodModeWidget />
     </div>
