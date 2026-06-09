@@ -43,24 +43,22 @@ export async function POST(request: Request) {
       user = newUser.user;
     }
 
-    // 2. Generate the magic link
-    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-      type: 'magiclink',
-      email,
-      options: {
-        redirectTo: redirectTo || `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/verify`,
-      },
-    });
-
-    if (linkError) {
-      console.error('[Send Magic Link] Failed to generate link:', linkError);
-      return NextResponse.json({ error: linkError.message }, { status: 500 });
-    }
-
-    const actionLink = linkData.properties.action_link;
-
-    // 3. Dev / God Mode bypass logic (no emails sent, direct auto-login)
+    // 2. Dev / God Mode bypass logic (no emails sent, direct auto-login)
     if (isDev || isGodMode) {
+      const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+        type: 'magiclink',
+        email,
+        options: {
+          redirectTo: redirectTo || `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/verify`,
+        },
+      });
+
+      if (linkError) {
+        console.error('[Send Magic Link] Failed to generate link:', linkError);
+        return NextResponse.json({ error: linkError.message }, { status: 500 });
+      }
+
+      const actionLink = linkData.properties.action_link;
       console.log(`[Auth Bypass] Direct login link generated for ${email}: ${actionLink}`);
       return NextResponse.json({ 
         success: true, 
@@ -69,9 +67,24 @@ export async function POST(request: Request) {
       });
     }
 
-    // 4. Send via Resend if API key is set
+    // 3. Send via Resend if API key is set
     const resendApiKey = process.env.RESEND_API_KEY;
     if (resendApiKey) {
+      const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+        type: 'magiclink',
+        email,
+        options: {
+          redirectTo: redirectTo || `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/verify`,
+        },
+      });
+
+      if (linkError) {
+        console.error('[Send Magic Link] Failed to generate link:', linkError);
+        return NextResponse.json({ error: linkError.message }, { status: 500 });
+      }
+
+      const actionLink = linkData.properties.action_link;
+
       try {
         const resend = new Resend(resendApiKey);
         const { error: resendError } = await resend.emails.send({
@@ -103,10 +116,21 @@ export async function POST(request: Request) {
       }
     }
 
-    // 5. No Resend API key set in production
-    return NextResponse.json({ 
-      error: 'Resend API key is not configured in production environment. Please set RESEND_API_KEY.' 
-    }, { status: 500 });
+    // 4. Default fallback: Send magic link directly via Supabase Auth SMTP
+    console.log(`[Auth] Resend API key not configured. Triggering default Supabase SMTP email delivery for: ${email}`);
+    const { error: otpError } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: redirectTo || `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/verify`,
+      },
+    });
+
+    if (otpError) {
+      console.error('[Supabase OTP Error]:', otpError);
+      return NextResponse.json({ error: otpError.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, bypassed: false });
 
   } catch (err) {
     console.error('[Send Magic Link Exception]:', err);
