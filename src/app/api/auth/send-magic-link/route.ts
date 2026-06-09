@@ -86,9 +86,17 @@ export async function POST(request: Request) {
       const actionLink = linkData.properties.action_link;
 
       try {
+        let fromEmail = 'Deylon <login@deylon.app>';
+        if (host.includes('getdeylon.com')) {
+          fromEmail = 'Deylon <login@getdeylon.com>';
+        }
+        if (process.env.RESEND_FROM_EMAIL) {
+          fromEmail = process.env.RESEND_FROM_EMAIL;
+        }
+
         const resend = new Resend(resendApiKey);
         const { error: resendError } = await resend.emails.send({
-          from: 'Deylon <login@deylon.app>',
+          from: fromEmail,
           to: email,
           subject: 'Sign in to Deylon',
           html: `
