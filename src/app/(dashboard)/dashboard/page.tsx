@@ -20,6 +20,7 @@ const mapDbMessagesToChat = (dbMessages: any[]): any[] => {
     id: `db-${idx}-${Date.now()}`,
     role: m.role === 'assistant' ? 'deylon' : 'me',
     text: m.content || '',
+    metadata: m.metadata || undefined,
   }));
 };
  
