@@ -33,7 +33,7 @@ export function ProblemSection() {
   );
 
   return (
-    <section id="problem" ref={containerRef} className="relative h-[650vh] bg-black text-white mt-[56px]">
+    <section id="problem" ref={containerRef} className="relative h-[650vh] bg-black text-white">
       <div className="sticky top-0 h-screen w-full flex flex-col overflow-hidden">
         
         {/* Progress Bar Header */}
