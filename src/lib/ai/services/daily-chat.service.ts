@@ -1,5 +1,5 @@
 import { OpenAIService } from './openai';
-import { getDayNumber, formatDate } from '@/lib/utils/date';
+import { getDayNumber, formatDate, formatTime } from '@/lib/utils/date';
 import { buildDailyChatPrompt } from '../prompts/daily-chat';
 import { buildChatSystemPrompt } from '../utils/context-builder';
 import { retrieveMemories } from '../utils/memory-retrieval';
@@ -122,7 +122,7 @@ export class DailyChatService {
     const { core, relevant } = await retrieveMemories(supabase, userId, lastUserMessage);
 
     // 7. Assemble context injection and final prompt
-    const currentDate = formatDate(new Date(), timezone);
+    const currentDate = `${formatDate(new Date(), timezone)} at ${formatTime(new Date(), timezone)}`;
     const systemPromptBase = buildDailyChatPrompt(name, sprintDay);
     const chatSystemPrompt = buildChatSystemPrompt(systemPromptBase, {
       name,

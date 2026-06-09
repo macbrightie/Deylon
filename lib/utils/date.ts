@@ -88,3 +88,15 @@ export function getTodayISO(timezone: string): string {
     day: '2-digit',
   }).format(new Date());
 }
+
+/**
+ * Returns a timezone-aware formatted time string (e.g. "9:46 PM")
+ */
+export function formatTime(date: Date, timezone: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date);
+}
