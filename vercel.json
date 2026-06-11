@@ -2,15 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/morning-check",
-      "schedule": "0 * * * *"
-    },
-    {
-      "path": "/api/cron/afternoon-check",
-      "schedule": "0 * * * *"
-    },
-    {
-      "path": "/api/cron/evening-delivery",
-      "schedule": "0 * * * *"
+      "schedule": "0 9 * * *"
     }
   ]
 }
