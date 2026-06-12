@@ -595,24 +595,24 @@ function HabitGrid({
         <div ref={dropdownRef} className="relative self-start md:self-auto flex-shrink-0 z-40 select-none">
           <button 
             onClick={() => setIsOpen(!isOpen)}
-            className="flex items-center gap-2 pl-[12px] pr-[6px] py-[6px] rounded-[6px] bg-[#1a1a1a] hover:bg-[#2A2A2E] text-white text-[18px] font-sans font-medium border border-white/10 outline-none cursor-pointer transition-colors shadow-sm select-none"
+            className="flex items-center gap-1.5 pl-[8px] pr-[4px] py-[8px] rounded-[6px] bg-[#1a1a1a] hover:bg-[#2A2A2E] text-white text-[14px] font-sans font-medium border border-white/10 outline-none cursor-pointer transition-colors shadow-sm select-none"
           >
             <span className="leading-none">
               {filter === 'overall' ? t('moves_checked', langKey) : t('specific_habits', langKey)}
             </span>
-            <svg width="15" height="9" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="2" className={`opacity-60 transition-transform ${isOpen ? 'rotate-180' : ''}`}>
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="2" className={`opacity-60 transition-transform ${isOpen ? 'rotate-180' : ''}`}>
               <path d="M1 1l4 4 4-4" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
           
           {isOpen && (
-            <div className="absolute right-0 mt-1.5 w-[240px] rounded-[8px] bg-[#1a1a1a] border border-white/10 shadow-lg py-2.5 z-50">
+            <div className="absolute right-0 mt-1.5 w-[180px] rounded-[8px] bg-[#1a1a1a] border border-white/10 shadow-lg py-1 z-50">
               <button
                 onClick={() => {
                   onFilterChange('overall');
                   setIsOpen(false);
                 }}
-                className={`w-full text-left px-[18px] py-[9px] text-[18px] font-sans transition-colors ${
+                className={`w-full text-left pl-[8px] pr-[4px] py-[8px] text-[14px] font-sans transition-colors ${
                   filter === 'overall' ? 'bg-white/10 text-white font-medium' : 'text-white/70 hover:text-white hover:bg-white/5'
                 }`}
               >
@@ -623,7 +623,7 @@ function HabitGrid({
                   onFilterChange('habit');
                   setIsOpen(false);
                 }}
-                className={`w-full text-left px-[18px] py-[9px] text-[18px] font-sans transition-colors ${
+                className={`w-full text-left pl-[8px] pr-[4px] py-[8px] text-[14px] font-sans transition-colors ${
                   filter === 'habit' ? 'bg-white/10 text-white font-medium' : 'text-white/70 hover:text-white hover:bg-white/5'
                 }`}
               >
