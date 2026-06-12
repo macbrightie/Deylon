@@ -4,7 +4,7 @@ import { Resend } from 'resend';
 
 export async function POST(request: Request) {
   try {
-    const { email, redirectTo } = await request.json();
+    const { email, redirectTo, messages } = await request.json();
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
@@ -41,6 +41,33 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: createError.message }, { status: 500 });
       }
       user = newUser.user;
+    }
+
+    // 1.5. If onboarding messages are provided, save them as a completed conversation
+    if (messages && Array.isArray(messages) && messages.length > 0) {
+      try {
+        const payloadMessages = messages.map((m: any) => ({
+          role: m.role === 'assistant' || m.role === 'deylon' ? 'assistant' as const : 'user' as const,
+          content: m.content || m.text || '',
+        }));
+
+        console.log(`[Send Magic Link] Saving completed onboarding conversation for user ${user.id} (${email})...`);
+        const { error: convError } = await supabase
+          .from('conversations')
+          .insert({
+            user_id: user.id,
+            messages: payloadMessages,
+            completed: true
+          });
+
+        if (convError) {
+          console.error('[Send Magic Link] Database insert error for conversation:', convError);
+        } else {
+          console.log('[Send Magic Link] Onboarding conversation saved successfully.');
+        }
+      } catch (saveError) {
+        console.error('[Send Magic Link] Failed to format or save onboarding conversation:', saveError);
+      }
     }
 
     // 2. Dev / God Mode bypass logic (no emails sent, direct auto-login)

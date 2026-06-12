@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
  * - In production, attempts to send the magic link using Resend via our custom API route (bypassing Supabase SMTP limits).
  * - Falls back to standard Supabase client signInWithOtp if the custom backend route is not configured or fails.
  */
-export async function sendMagicLinkOrBypass(email: string, redirectTo: string) {
+export async function sendMagicLinkOrBypass(email: string, redirectTo: string, messages?: any[]) {
   const isDev = process.env.NODE_ENV === 'development' || 
                 (typeof window !== 'undefined' && (
                   window.location.hostname === 'localhost' || 
@@ -21,7 +21,7 @@ export async function sendMagicLinkOrBypass(email: string, redirectTo: string) {
       const res = await fetch('/api/auth/send-magic-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, redirectTo }),
+        body: JSON.stringify({ email, redirectTo, messages }),
       });
       
       if (!res.ok) {
@@ -49,7 +49,7 @@ export async function sendMagicLinkOrBypass(email: string, redirectTo: string) {
     const res = await fetch('/api/auth/send-magic-link', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, redirectTo }),
+      body: JSON.stringify({ email, redirectTo, messages }),
     });
 
     if (res.ok) {

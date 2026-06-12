@@ -1823,6 +1823,22 @@ export default function DashboardPage() {
             }
           }
         } else {
+          // Check if there is a completed conversation to build a plan from
+          const { data: completedConv } = await supabase
+            .from('conversations')
+            .select('id')
+            .eq('user_id', authUser.id)
+            .eq('completed', true)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (completedConv) {
+            console.log(`[Dashboard] Found completed onboarding conversation ${completedConv.id} but no plan. Redirecting to plan builder...`);
+            router.push(`/building?conversationId=${completedConv.id}`);
+            return;
+          }
+
           // Fetch latest incomplete onboarding conversation
           const { data: latestConv } = await supabase
             .from('conversations')

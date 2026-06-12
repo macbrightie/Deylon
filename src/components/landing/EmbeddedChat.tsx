@@ -702,7 +702,7 @@ export function EmbeddedChat({
       localStorage.setItem("deylon_onboarding_email", email);
 
       const { sendMagicLinkOrBypass } = await import('@/lib/supabase/auth-helper');
-      const { error, bypassed } = await sendMagicLinkOrBypass(email, `${window.location.origin}/verify`);
+      const { error, bypassed } = await sendMagicLinkOrBypass(email, `${window.location.origin}/verify`, messages);
 
       if (error) throw error;
 
