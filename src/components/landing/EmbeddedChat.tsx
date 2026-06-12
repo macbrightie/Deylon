@@ -589,18 +589,20 @@ export function EmbeddedChat({
   onCompleteOnboarding,
 }: EmbeddedChatProps) {
   const [chatState, setChatState] = useState<ChatState>("idle");
-  const [messages, setMessages] = useState<Message[]>(initialMessages || [
-    {
-      id: "m1",
-      role: "deylon",
-      text: "Hi, I'm Deylon. I'm here to help you turn your biggest goals into a daily reality.",
-    },
-    {
-      id: "m2",
-      role: "deylon",
-      text: "What's the one thing you've been wanting to change or achieve, but haven't found the right path for yet? Tell me freely.",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>(
+    (initialMessages && initialMessages.length > 0) ? initialMessages : [
+      {
+        id: "m1",
+        role: "deylon",
+        text: "Hi, I'm Deylon. I'm here to help you turn your biggest goals into a daily reality.",
+      },
+      {
+        id: "m2",
+        role: "deylon",
+        text: "What's the one thing you've been wanting to change or achieve, but haven't found the right path for yet? Tell me freely.",
+      },
+    ]
+  );
   const [generating, setGenerating] = useState(false);
   const [loadingEmail, setLoadingEmail] = useState(false);
   const [generatingPlan, setGeneratingPlan] = useState(false);
