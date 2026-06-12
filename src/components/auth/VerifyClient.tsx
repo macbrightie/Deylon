@@ -14,81 +14,115 @@ export function VerifyClient() {
   useEffect(() => {
     const code = searchParams.get('code');
     const supabase = createClient();
+    let isMounted = true;
+    let successTriggered = false;
 
-    async function handleExchange() {
-      if (!code) {
-        // If there's no code in the URL query, check if we already have an active session
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          router.push('/dashboard');
-        } else {
-          setStatus('error');
-          setErrorMessage('No authentication code found in URL.');
+    // Helper to handle post-authentication database sync and redirects
+    async function handleSuccess(session: any) {
+      if (successTriggered) return;
+      successTriggered = true;
+
+      const user = session.user;
+      const transcript = localStorage.getItem("deylon_onboarding_transcript");
+
+      if (transcript && user) {
+        try {
+          const rawMessages = JSON.parse(transcript);
+          const payloadMessages = rawMessages.map((m: any) => ({
+            role: m.role === 'assistant' || m.role === 'deylon' ? 'assistant' as const : 'user' as const,
+            content: m.content || m.text || '',
+          }));
+
+          const { data: conv, error: convError } = await supabase
+            .from('conversations')
+            .insert({
+              user_id: user.id,
+              messages: payloadMessages,
+              completed: true
+            })
+            .select()
+            .single();
+
+          if (!convError && conv) {
+            localStorage.removeItem("deylon_onboarding_transcript");
+            if (isMounted) setStatus('success');
+            setTimeout(() => {
+              if (isMounted) router.push(`/building?conversationId=${conv.id}`);
+            }, 1500);
+            return;
+          } else {
+            console.error('[VerifyClient] Database insert error:', convError);
+          }
+        } catch (parseError) {
+          console.error('[VerifyClient] Failed to parse or save transcript:', parseError);
+        }
+      }
+
+      if (isMounted) setStatus('success');
+      setTimeout(() => {
+        if (isMounted) router.push('/dashboard');
+      }, 1500);
+    }
+
+    // Subscribe to auth state changes to detect session from hash fragment redirects (#access_token)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[VerifyClient] Auth state changed:', event, session ? 'Session exists' : 'No session');
+      if (session) {
+        handleSuccess(session);
+      }
+    });
+
+    // Check for active session or exchange code immediately
+    async function checkOrExchange() {
+      // 1. If we have a code query param (PKCE flow), exchange it
+      if (code) {
+        try {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) {
+            // Check if a session was already established (e.g. pre-fetched by browser)
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+              handleSuccess(session);
+            } else {
+              throw error;
+            }
+          }
+        } catch (err: any) {
+          console.error('[Verify Code Exchange Error]:', err);
+          if (isMounted) {
+            setStatus('error');
+            setErrorMessage(err.message || 'Failed to exchange authentication code.');
+          }
         }
         return;
       }
 
-      try {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) {
-          // If code exchange fails, check if we already have a session (e.g. email pre-fetch)
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-            console.log('[VerifyClient] Code exchange failed but session exists. Proceeding.');
-          } else {
-            throw error;
-          }
-        }
-        
-        const transcript = localStorage.getItem("deylon_onboarding_transcript");
-        if (transcript) {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            try {
-              const rawMessages = JSON.parse(transcript);
-              const payloadMessages = rawMessages.map((m: any) => ({
-                role: m.role === 'assistant' || m.role === 'deylon' ? 'assistant' as const : 'user' as const,
-                content: m.content || m.text || '',
-              }));
-
-              const { data: conv, error: convError } = await supabase
-                .from('conversations')
-                .insert({
-                  user_id: user.id,
-                  messages: payloadMessages,
-                  completed: true
-                })
-                .select()
-                .single();
-
-              if (!convError && conv) {
-                localStorage.removeItem("deylon_onboarding_transcript");
-                setStatus('success');
-                setTimeout(() => {
-                  router.push(`/building?conversationId=${conv.id}`);
-                }, 1500);
-                return;
-              } else {
-                console.error('[VerifyClient] Database insert error:', convError);
-              }
-            } catch (parseError) {
-              console.error('[VerifyClient] Failed to parse or save transcript:', parseError);
-            }
-          }
-        }
-
-        setStatus('success');
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 1500);
-      } catch (err: any) {
-        console.error('[Verify Code Exchange Error]:', err);
-        setStatus('error');
-        setErrorMessage(err.message || 'Failed to exchange authentication code.');
+      // 2. If no code, check if we already have a session (e.g. parsed from hash fragment)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        handleSuccess(session);
+        return;
       }
+
+      // 3. Fallback: Wait a brief moment for hash fragment parsing to finish
+      setTimeout(async () => {
+        if (!isMounted || successTriggered) return;
+        const { data: { session: delayedSession } } = await supabase.auth.getSession();
+        if (delayedSession) {
+          handleSuccess(delayedSession);
+        } else {
+          setStatus('error');
+          setErrorMessage('No authentication code or session found in URL. Please request a new magic link.');
+        }
+      }, 2000);
     }
 
-    handleExchange();
+    checkOrExchange();
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, [searchParams, router]);
 
   return (
