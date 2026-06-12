@@ -72,9 +72,30 @@ export function VerifyClient() {
       }
     });
 
-    // Check for active session or exchange code immediately
+    // Check for active session, exchange code, parse hash parameters, or handle errors
     async function checkOrExchange() {
-      // 1. If we have a code query param (PKCE flow), exchange it
+      // 1. Parse hash parameters
+      const hash = typeof window !== 'undefined' ? window.location.hash : '';
+      const hashParams = new URLSearchParams(hash.replace('#', '?'));
+
+      // 2. Detect error from query parameters or hash fragment
+      const urlError = searchParams.get('error') || hashParams.get('error');
+      const urlErrorDescription = searchParams.get('error_description') || hashParams.get('error_description');
+
+      if (urlError) {
+        console.error('[Verify Client URL Error]:', urlError, urlErrorDescription);
+        if (isMounted) {
+          setStatus('error');
+          setErrorMessage(
+            urlErrorDescription 
+              ? decodeURIComponent(urlErrorDescription.replace(/\+/g, ' ')) 
+              : `Authentication error: ${urlError}`
+          );
+        }
+        return;
+      }
+
+      // 3. If we have a code query param (PKCE flow), exchange it
       if (code) {
         try {
           const { error } = await supabase.auth.exchangeCodeForSession(code);
@@ -97,14 +118,39 @@ export function VerifyClient() {
         return;
       }
 
-      // 2. If no code, check if we already have a session (e.g. parsed from hash fragment)
+      // 4. Manually parse access_token and refresh_token from hash fragment if present
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      if (accessToken) {
+        try {
+          console.log('[VerifyClient] Manually setting session from hash fragment...');
+          const { data, error: setSessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || '',
+          });
+          if (setSessionError) throw setSessionError;
+          if (data.session) {
+            handleSuccess(data.session);
+            return;
+          }
+        } catch (err: any) {
+          console.error('[Verify Manual Session Set Error]:', err);
+          if (isMounted) {
+            setStatus('error');
+            setErrorMessage(err.message || 'Failed to initialize session from URL parameters.');
+          }
+          return;
+        }
+      }
+
+      // 5. If no code/tokens in hash, check if we already have an active session
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         handleSuccess(session);
         return;
       }
 
-      // 3. Fallback: Wait a brief moment for hash fragment parsing to finish
+      // 6. Fallback: Wait a brief moment for hash fragment parsing/event handling to finish
       setTimeout(async () => {
         if (!isMounted || successTriggered) return;
         const { data: { session: delayedSession } } = await supabase.auth.getSession();
@@ -112,9 +158,9 @@ export function VerifyClient() {
           handleSuccess(delayedSession);
         } else {
           setStatus('error');
-          setErrorMessage('No authentication code or session found in URL. Please request a new magic link.');
+          setErrorMessage('No active session or authentication tokens found in the URL. Please request a new magic link.');
         }
-      }, 2000);
+      }, 2500);
     }
 
     checkOrExchange();
