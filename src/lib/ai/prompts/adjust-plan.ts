@@ -13,8 +13,8 @@ CRITICAL RULES:
 5. You MUST generate daily tasks for ALL remaining days from the start day up to Day 21. Do not skip any days, and do not truncate the list with placeholders.
 6. The output must be valid JSON matching the schema below.
 7. Day 7, Day 14, and Day 21 MUST be milestone checklist days representing clear "weekly quick wins" that sum up or showcase the week's progress (Day 7 is the baseline habit win; Day 14 is the depth check / integration win; Day 21 is the ultimate sprint victory win). The task text on Day 7, 14, and 21 must start with "Milestone Win: [Action]".
-8. THE 3-PART DAILY MOVE: EVERY checklist inside the 'task' field MUST be formatted EXACTLY as three consecutive sentences using this exact format and emojis:
-"🧠 Study: [Brief study/review task with a specific concrete resource, library, or tool, e.g., Watch this 10-min tutorial on Biopython parsing (Example: Biopython SeqIO docs)]. 🔁 Daily Reps: [The volume/rep task with specific volume, e.g., Write script to parse 3 fastq files]. 🎯 Strategy: [High-leverage action or specific clue/hint, e.g., Clue: filter out low-quality reads first]."
+8. THE 3-PART DAILY MOVE: EVERY checklist inside the 'task' field MUST be formatted EXACTLY as three consecutive sentences using this exact format:
+"Study: [Brief study/review task with a specific concrete resource, library, or tool, e.g., Watch this 10-min tutorial on Biopython parsing (Example: Biopython SeqIO docs)]. Daily Reps: [The volume/rep task with specific volume, e.g., Write script to parse 3 fastq files]. Strategy: [High-leverage action or specific clue/hint, e.g., Clue: filter out low-quality reads first]."
 Each part must contain highly specific, domain-relevant tools, libraries, databases, or resources matching the user's goal (for example, if they are learning bioinformatics, use specific resources like Biopython, NCBI BLAST, GenBank, fastq datasets, rather than generic Python basics). This ensures deep, domain-specific value on every card.
 If it's a rest day or low-intensity day, simply adjust the sentences to be lighter, but always provide clear sentences ending in a period so they render correctly as checklist items.
 9. For each daily task, you MUST generate a field called 'social_chat_messages' which is a JSON array of 2 to 3 friendly, warm, conversational, and relatable chat message bubbles. Do NOT include any generic greetings like 'Greetings Dr. Bright' or 'Salut Bright' in the message text.
@@ -30,7 +30,7 @@ RETURN ONLY VALID JSON - no preamble, no explanation, no markdown code blocks:
   "daily_tasks": [
     {
       "day_number": 6,
-      "task": "🧠 Study: Read about bioinformatics sequences. (Example: Biopython SeqIO docs). 🔁 Daily Reps: Print a sequence length in a script. 🎯 Strategy: Clue: Check your Python environment path first.",
+      "task": "Study: Read about bioinformatics sequences. (Example: Biopython SeqIO docs). Daily Reps: Print a sequence length in a script. Strategy: Clue: Check your Python environment path first.",
       "duration": "20 mins",
       "social_chat_messages": [
         "First check-in bubble body...",
@@ -42,7 +42,7 @@ RETURN ONLY VALID JSON - no preamble, no explanation, no markdown code blocks:
     },
     {
       "day_number": 7,
-      "task": "🧠 Study: Milestone Win: Explore NCBI database search. (Example: BLAST API). 🔁 Daily Reps: Search for a target gene sequence. 🎯 Strategy: Clue: Filter results by e-value score.",
+      "task": "Study: Milestone Win: Explore NCBI database search. (Example: BLAST API). Daily Reps: Search for a target gene sequence. Strategy: Clue: Filter results by e-value score.",
       "duration": "20 mins",
       "social_chat_messages": [
         "Check-in...",
@@ -54,7 +54,7 @@ RETURN ONLY VALID JSON - no preamble, no explanation, no markdown code blocks:
     },
     {
       "day_number": 21,
-      "task": "🧠 Study: Milestone Win: Review your bioinformatics portfolio. (Example: GitHub portfolio profile). 🔁 Daily Reps: Publish your sequence parsing tool. 🎯 Strategy: Clue: Document your installation steps clearly.",
+      "task": "Study: Milestone Win: Review your bioinformatics portfolio. (Example: GitHub portfolio profile). Daily Reps: Publish your sequence parsing tool. Strategy: Clue: Document your installation steps clearly.",
       "duration": "25 mins",
       "social_chat_messages": [
         "Coaching bubble...",
