@@ -1888,6 +1888,17 @@ export default function DashboardPage() {
 
         if (userProfile) {
           setTelegramConnected(!!userProfile.telegram_chat_id);
+
+          // Detect client timezone and sync it with Supabase if it differs or is missing
+          const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          if (detectedTimezone && userProfile.timezone !== detectedTimezone) {
+            console.log('[Timezone Sync] updating user timezone in DB from', userProfile.timezone, 'to', detectedTimezone);
+            await supabase
+              .from('users')
+              .update({ timezone: detectedTimezone })
+              .eq('id', authUser.id);
+            userProfile.timezone = detectedTimezone;
+          }
         }
 
         // 2. Fetch active coach plan
