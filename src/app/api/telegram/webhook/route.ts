@@ -435,7 +435,7 @@ export async function POST(request: NextRequest) {
         ];
 
         // Call Gemini onboarding chat
-        const reply = await OnboardingService.chat(updatedMessages);
+        const reply = await OnboardingService.chat(updatedMessages, { name: user.display_name, timezone: user.timezone });
         const isComplete = OnboardingService.isProfileComplete(reply);
 
         // Save conversation history to Supabase

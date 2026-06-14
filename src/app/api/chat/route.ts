@@ -142,7 +142,19 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // ─── ONBOARDING CHAT FLOW (NO PLAN OR UNCONFIGURED SUPABASE) ───
-      assistantMessage = await OnboardingService.chat(messages);
+      let context = {};
+      if (user && supabase) {
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('display_name, timezone')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (userProfile) {
+          context = { name: userProfile.display_name, timezone: userProfile.timezone };
+        }
+      }
+
+      assistantMessage = await OnboardingService.chat(messages, context);
       complete = OnboardingService.isProfileComplete(assistantMessage);
 
       // Persist conversation if we have a user session and supabase client
