@@ -529,16 +529,17 @@ function EmailPanel({ onSubmit, loading }: EmailPanelProps) {
   );
 }
 
-// ─── Go to Dashboard Button ───────────────────────────────────────────────────
+// ─── Open Email Button ───────────────────────────────────────────────────
 
-function GoToDashboardButton() {
-  const router = useRouter();
+function OpenEmailButton() {
   return (
     <button
-      onClick={() => router.push('/dashboard')}
+      onClick={() => {
+        window.location.href = 'mailto:';
+      }}
       className="px-8 py-4 bg-[#1a1a1a] text-white font-sans text-[14px] font-medium rounded-full hover:bg-[#333] transition-colors tracking-wide cursor-pointer"
     >
-      Go to Dashboard
+      Open email app
     </button>
   );
 }
@@ -573,7 +574,7 @@ function DashboardPanel() {
 
         {/* CTA button */}
         <div>
-          <GoToDashboardButton />
+          <OpenEmailButton />
         </div>
       </div>
 
