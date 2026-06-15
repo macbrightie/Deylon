@@ -45,7 +45,7 @@ export function getDayNumber(planStartDate: Date | string, timezone: string): nu
   }
   const diffMs = today.getTime() - start.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  return Math.max(1, diffDays + 1);
+  return diffDays + 1;
 }
 
 /**

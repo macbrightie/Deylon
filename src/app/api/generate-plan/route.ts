@@ -62,7 +62,40 @@ export async function POST(request: NextRequest) {
       .map((m: any) => `${m.role.toUpperCase()}: ${m.content}`)
       .join('\n\n');
 
-    const profile = (conversation.extracted_profile ?? {}) as any;
+    let profile = (conversation.extracted_profile ?? {}) as any;
+    if (Object.keys(profile).length === 0) {
+      const lastAssistantMsg = [...messages]
+        .reverse()
+        .find((m: any) => m.role === 'assistant' && m.content.includes('[PROFILE_READY]'));
+      if (lastAssistantMsg) {
+        const match = lastAssistantMsg.content.match(/\[PROFILE_READY\]([\s\S]*?)\[\/PROFILE_READY\]/);
+        if (match) {
+          try {
+            profile = JSON.parse(match[1].trim());
+            await supabase
+              .from('conversations')
+              .update({ extracted_profile: profile })
+              .eq('id', conversationId);
+          } catch (e) {
+            console.error('[generate-plan] Failed to parse [PROFILE_READY] from messages:', e);
+          }
+        }
+      }
+    }
+
+    // Sync onboarding details to users table
+    const startingLevel = profile.startingLevel || 'beginner';
+    const intensity = profile.intensity || 'serious';
+    const timezone = profile.timezone || 'Africa/Lagos';
+
+    await supabase
+      .from('users')
+      .update({
+        starting_level: startingLevel,
+        intensity: intensity,
+        timezone: timezone
+      })
+      .eq('id', user.id);
 
     // Generate plan with Gemini
     const planData = await PlannerService.generatePlan(profile, transcript);

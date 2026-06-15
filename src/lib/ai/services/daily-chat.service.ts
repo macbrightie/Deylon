@@ -43,7 +43,7 @@ export class DailyChatService {
 
     const timezone = user?.timezone || 'Africa/Lagos';
     if (plan) {
-      sprintDay = getDayNumber(plan.start_date || new Date(plan.created_at), timezone);
+      sprintDay = Math.max(1, getDayNumber(plan.start_date || new Date(plan.created_at), timezone));
     }
 
     // 2. Fetch conversation details & extracted profile (name)

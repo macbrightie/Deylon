@@ -267,6 +267,8 @@ interface FlashCardProps {
   onStatusChange?: (cardId: string, status: 'pending' | 'done' | 'adjusted' | 'partial', checkedStates: boolean[]) => Promise<void>;
   langKey?: string;
   isLocked?: boolean;
+  isPaywallLocked?: boolean;
+  onPaywallLockClick?: () => void;
 }
 
 
@@ -280,7 +282,9 @@ function FlashCard({
   label, 
   onStatusChange,
   langKey = 'English',
-  isLocked = false
+  isLocked = false,
+  isPaywallLocked = false,
+  onPaywallLockClick
 }: FlashCardProps) {
   const [activeFace, setActiveFace] = useState<'front' | 'black' | 'analytics'>('front');
   const today = new Date();
@@ -317,8 +321,19 @@ function FlashCard({
 
   const handleDotClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isPaywallLocked) {
+      if (onPaywallLockClick) onPaywallLockClick();
+      return;
+    }
     if (isLocked) return;
     setActiveFace('black');
+  };
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (isPaywallLocked) {
+      e.stopPropagation();
+      if (onPaywallLockClick) onPaywallLockClick();
+    }
   };
 
   const resetCard = (e: React.MouseEvent) => {
@@ -331,17 +346,29 @@ function FlashCard({
     : 0;
 
   return (
-    <div className={`w-full max-w-[280px] flex-shrink-0 rounded-[16px] bg-[#f0ede6] relative overflow-hidden h-[430px] transition-all duration-500 shadow-sm border border-black/5 flex flex-col justify-between ${isLocked ? 'opacity-50 grayscale select-none' : ''}`}>
+    <div 
+      onClick={handleCardClick}
+      className={`w-full max-w-[280px] flex-shrink-0 rounded-[16px] bg-[#f0ede6] relative overflow-hidden h-[430px] transition-all duration-500 shadow-sm border border-black/5 flex flex-col justify-between ${isLocked ? 'opacity-50 grayscale select-none' : ''} ${isPaywallLocked ? 'opacity-85 cursor-pointer hover:border-amber-500/35 hover:shadow-md' : ''}`}
+    >
       
       {/* Front Face Content: 24px (p-6) padding all around */}
       <div className={`absolute inset-0 p-6 flex flex-col justify-between transition-opacity duration-300 z-10 ${activeFace !== 'front' ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <div className="flex-1 flex flex-col justify-start">
-          {isLocked && (
+          {isPaywallLocked && (
+            <div className="self-start px-2.5 py-1 rounded-[6px] bg-amber-500/10 border border-amber-500/20 text-amber-700 text-[10px] font-sans tracking-widest uppercase font-bold mb-2 select-none flex items-center gap-1">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              Deylon Pro
+            </div>
+          )}
+          {!isPaywallLocked && isLocked && (
             <div className="self-start px-2.5 py-1 rounded-[6px] bg-red-500/10 border border-red-500/20 text-red-700 text-[10px] font-sans tracking-widest uppercase font-bold mb-2 select-none">
               🔒 MISSED
             </div>
           )}
-          {!isLocked && (dayNumber === 7 || dayNumber === 14 || dayNumber === 21) && (
+          {!isPaywallLocked && !isLocked && (dayNumber === 7 || dayNumber === 14 || dayNumber === 21) && (
             <div className="self-start px-2.5 py-1 rounded-[6px] bg-[#1a1a1a]/5 border border-[#1a1a1a]/10 text-[#a06f00] text-[9.5px] font-sans tracking-widest uppercase font-bold mb-2 select-none animate-pulse">
               🏆 Weekly Milestone
             </div>
@@ -356,7 +383,14 @@ function FlashCard({
             onClick={handleDotClick}
             className={`w-6 h-6 rounded-full bg-[#1a1a1a] flex-shrink-0 transition-transform duration-300 relative z-20 flex items-center justify-center ${isLocked ? 'opacity-20 cursor-not-allowed' : 'cursor-pointer hover:scale-110 active:scale-95'}`}
             aria-label="Reveal plan"
-          />
+          >
+            {isPaywallLocked && (
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            )}
+          </button>
         </div>
       </div>
 
@@ -1789,6 +1823,8 @@ export default function DashboardPage() {
   const [showRoadmap, setShowRoadmap] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showTelegramPrompt, setShowTelegramPrompt] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [isPro, setIsPro] = useState(false);
 
   // Profile Form States
   const [profileName, setProfileName] = useState('Bright Mac');
@@ -1890,6 +1926,7 @@ export default function DashboardPage() {
         if (userProfile) {
           setTelegramConnected(!!userProfile.telegram_chat_id);
           setTelegramLinkingState(userProfile.telegram_linking_state || null);
+          setIsPro(!!userProfile.is_pro);
 
           // Detect client timezone and sync it with Supabase if it differs or is missing
           const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -2438,8 +2475,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Day 15+ Premium Upgrade Nudge Banner */}
-        {activeDay >= 15 && (
+        {/* Day 10-14 Premium Upgrade Nudge Banner */}
+        {activeDay >= 10 && activeDay <= 14 && !isPro && (
           <div className="mb-6 rounded-[20px] bg-gradient-to-r from-[#104D3B] to-[#1a4034] p-6 text-white flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm border border-white/10 select-none">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white flex-shrink-0 mt-0.5">
@@ -2448,15 +2485,15 @@ export default function DashboardPage() {
                 </svg>
               </div>
               <div>
-                <h4 className="text-[18px] font-sans font-bold leading-snug">Day {activeDay} of your 21-day sprint</h4>
+                <h4 className="text-[18px] font-sans font-bold leading-snug">Day {activeDay} of your 14-day free trial</h4>
                 <p className="text-[14px] text-white/80 font-sans mt-1 leading-relaxed max-w-2xl">
-                  You are approaching the end of your initial sprint! Unlock Deylon Pro to continue with the next phase of your relocation plan, including customized study guides, visa interviews prep, and professional French reviews.
+                  You are approaching the end of your free trial! Unlock Deylon Pro now to gain access to the remaining daily moves of this sprint (Days 15–21) and unlock custom guides, strategy adjustments, and advanced habit tracking.
                 </p>
               </div>
             </div>
             <Link
               href="/pro"
-              onClick={() => posthog.capture('upgrade_plan_clicked', { source: 'day_15_sprint_nudge' })}
+              onClick={() => posthog.capture('upgrade_plan_clicked', { source: 'day_10_14_sprint_nudge' })}
               className="px-6 py-3 rounded-[8px] bg-white text-[#104D3B] text-[13px] font-sans font-semibold hover:bg-white/95 transition-all text-center whitespace-nowrap self-start md:self-auto hover:scale-[1.02] active:scale-[0.98]"
             >
               Upgrade to Pro
@@ -2505,6 +2542,11 @@ export default function DashboardPage() {
                   onStatusChange={handleCardStatusChange}
                   langKey={langKey}
                   isLocked={telegramLinkingState !== 'active' || (card?.status === 'pending' && dayNum < calendarDayNum - 1)}
+                  isPaywallLocked={!isPro && dayNum >= 15}
+                  onPaywallLockClick={() => {
+                    posthog.capture('upgrade_plan_clicked', { source: `card_day_${dayNum}` });
+                    setShowUpgradeModal(true);
+                  }}
                 />
               );
             })}
@@ -2677,6 +2719,45 @@ export default function DashboardPage() {
         onConnect={handleToggleTelegram}
       />
       <GodModeWidget />
+
+      {/* Global Premium Upgrade Modal */}
+      <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
+        <DialogContent className="bg-[#1E1E22] text-white max-w-[420px] border-white/10 rounded-[24px] p-8 text-left shadow-2xl">
+          <DialogHeader>
+            <div className="w-12 h-12 rounded-full bg-[#1559EF]/10 flex items-center justify-center text-[#1559EF] mb-4">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+            <DialogTitle className="text-2xl font-sans font-bold text-white mb-2 text-left">
+              Unlock Deylon Pro
+            </DialogTitle>
+            <DialogDescription className="text-[14px] text-white/70 leading-relaxed text-left">
+              Day 15–21 tasks are premium features. Unlock Deylon Pro to access the rest of your 21-day sprint, custom habit plans, live strategy updates, and direct support from your world-class AI habits coach.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 mt-6">
+            <Link
+              href="/pro"
+              onClick={() => {
+                posthog.capture('upgrade_plan_clicked', { source: 'global_upgrade_modal' });
+                setShowUpgradeModal(false);
+              }}
+              className="w-full py-3 bg-[#1559EF] hover:bg-[#3b7aff] text-white rounded-[12px] font-sans font-medium text-center transition-colors text-[14px]"
+            >
+              Upgrade now for $12/mo
+            </Link>
+            <Button
+              variant="outline"
+              onClick={() => setShowUpgradeModal(false)}
+              className="w-full py-3 bg-white/5 hover:bg-white/10 text-white border-white/10 rounded-[12px] font-sans text-center transition-colors text-[14px]"
+            >
+              Maybe later
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       {/* Task Completion Confirmation Modal */}
       <Dialog open={!!pendingCompletion} onOpenChange={(open) => !open && setPendingCompletion(null)}>

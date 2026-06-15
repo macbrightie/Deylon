@@ -16,6 +16,11 @@ If it's a rest day or low-intensity day, simply adjust the sentences to be light
 8. For each daily task, you MUST generate a field called 'social_chat_messages' which is a JSON array of 2 to 3 friendly, warm, conversational, and relatable chat message bubbles. Do NOT include generic greetings like 'Greetings Dr. Bright' in the message text.
 9. You MUST set the "timeline_months" field in the JSON output to match the user's timelineGoal preference.
 10. You MUST generate exactly 4 milestones in the 'milestones' array that span from the current sprint to the user's target timeline. Proportionately scale and spread the durations.
+11. TAILOR TO STARTING LEVEL & SHOW-OFF WINS: Check the user's 'startingLevel' ("beginner" | "intermediate" | "advanced") in the profile. Scale the complexity of all daily tasks and milestone wins (Day 7, Day 14, and Day 21) accordingly:
+    - **beginner**: The daily moves and weekly milestone wins must be extremely basic and low-friction, resulting in a visible and satisfying "show-off" output. For example: Day 7 is printing a sequence length or translating 5 basic words. Do NOT generate advanced actions (e.g. job applications, publishing full tools, or complex conversations) for a beginner in Sprint 1.
+    - **intermediate**: Scale moves to incorporate basic integration (e.g. parsing a text file, speaking a paragraph, or designing a landing page).
+    - **advanced**: The tasks can address deep skill checks, server deployments, or live conversations.
+12. SPRINT PLACEMENT RULE: The 21 daily tasks represent ONLY the first 21 days (Sprint 1) of the user's overall timeline. Do not try to compress a multi-month plan's end goal (such as final job hunting, relocation, or full product launches) into this initial 21-day sprint. Sprints must serve as the early habit-building blocks of the longer roadmap.
 
 GOAL-TYPE FRAMEWORKS (apply based on primaryGoalType):
 
@@ -152,7 +157,7 @@ RETURN ONLY VALID JSON - no preamble, no explanation, no markdown code blocks:
   },
   "identity_statement": "The identity they are building toward - 'I am someone who...' - used in recovery messages",
   "first_move_tonight": "One thing they can do in the next 2 hours. Immediate. Under 10 minutes.",
-  "upgrade_nudge_day": 15,
+  "upgrade_nudge_day": 10,
   "context_notes": "Any location-specific, cultural, or financial context baked into this plan"
 }
 `;

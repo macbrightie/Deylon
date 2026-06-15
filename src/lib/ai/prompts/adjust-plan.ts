@@ -18,6 +18,11 @@ CRITICAL RULES:
 Each part must contain highly specific, domain-relevant tools, libraries, databases, or resources matching the user's goal (for example, if they are learning bioinformatics, use specific resources like Biopython, NCBI BLAST, GenBank, fastq datasets, rather than generic Python basics). This ensures deep, domain-specific value on every card.
 If it's a rest day or low-intensity day, simply adjust the sentences to be lighter, but always provide clear sentences ending in a period so they render correctly as checklist items.
 9. For each daily task, you MUST generate a field called 'social_chat_messages' which is a JSON array of 2 to 3 friendly, warm, conversational, and relatable chat message bubbles. Do NOT include any generic greetings like 'Greetings Dr. Bright' or 'Salut Bright' in the message text.
+10. TAILOR TO STARTING LEVEL & SHOW-OFF WINS: Check the user's 'startingLevel' ("beginner" | "intermediate" | "advanced") in the profile. Scale the complexity of all remaining tasks and milestones (Day 7, Day 14, and Day 21 wins) accordingly:
+    - **beginner**: The daily tasks and milestone wins must be extremely basic and low-friction, resulting in a visible, satisfying "show-off" output (e.g. printing sequence length, translating 5 basic words). Do NOT generate advanced actions like applying for roles or publishing tools.
+    - **intermediate**: Scale moves to incorporate basic integration (e.g. parsing a file, writing a simple paragraph).
+    - **advanced**: The tasks can address deep skill checks, server deployments, or live conversations.
+11. SPRINT PLACEMENT RULE: The 21 daily tasks represent ONLY the first 21 days (Sprint 1) of the user's overall timeline. Do not try to compress a multi-month plan's end goal (such as final job hunting, relocation, or full product launches) into this initial 21-day sprint. Sprints must serve as the early habit-building blocks of the longer roadmap.
 
 RETURN ONLY VALID JSON - no preamble, no explanation, no markdown code blocks:
 

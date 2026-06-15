@@ -469,9 +469,23 @@ export async function POST(request: NextRequest) {
           .maybeSingle();
 
         if (!conversation) {
+          // Fetch the completed onboarding conversation to copy the extracted profile
+          const { data: onboardingConv } = await supabase
+            .from('conversations')
+            .select('extracted_profile')
+            .eq('user_id', user.id)
+            .eq('completed', true)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
           const { data: newConv } = await supabase
             .from('conversations')
-            .insert({ user_id: user.id, messages: [] })
+            .insert({ 
+              user_id: user.id, 
+              messages: [],
+              extracted_profile: onboardingConv?.extracted_profile || null
+            })
             .select()
             .single();
           conversation = newConv;
@@ -479,6 +493,14 @@ export async function POST(request: NextRequest) {
 
         if (!conversation) {
           await sendMessage(chatId, '⚠️ Something went wrong trying to access your coaching session.');
+          return NextResponse.json({ ok: true });
+        }
+
+        // PRE-START CHECK: If the sprint hasn't started yet, intercept the chat!
+        const sprintDayCalc = getDayNumber(plan.start_date || new Date(plan.created_at), user.timezone || 'Africa/Lagos');
+        if (sprintDayCalc < 1) {
+          const greeting = formatUserGreeting(user.preferred_greeting, user.display_name, user.email);
+          await sendMessage(chatId, `🌅 <b>Hey ${user.display_name || 'friend'}!</b>\n\nI'm super excited too! But your challenge doesn't officially start until tomorrow morning at 10 AM.\n\nRest up, and I'll see you then!`);
           return NextResponse.json({ ok: true });
         }
 
@@ -503,7 +525,7 @@ export async function POST(request: NextRequest) {
           .limit(1)
           .maybeSingle();
         
-        const sprintDay = latestCard?.day_number || 1;
+        const sprintDay = latestCard?.day_number || sprintDayCalc;
 
         // Call daily coaching chat service
         const reply = await DailyChatService.chat(supabase, user.id, conversation.id, sprintDay);

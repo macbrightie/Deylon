@@ -27,10 +27,9 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createServiceClient();
 
-    // Fetch all users with a telegram_chat_id
     const { data: users, error } = await supabase
       .from('users')
-      .select('id, email, display_name, telegram_chat_id, timezone, preferred_greeting, carry_over_count_this_week')
+      .select('id, email, display_name, telegram_chat_id, timezone, preferred_greeting, carry_over_count_this_week, is_pro')
       .not('telegram_chat_id', 'is', null);
 
     if (error) {
@@ -64,6 +63,17 @@ export async function GET(request: NextRequest) {
           if (!plan) return;
 
           const dayNumber = getDayNumber(plan.start_date || new Date(plan.created_at), user.timezone || 'Africa/Lagos');
+          
+          if (!user.is_pro && dayNumber > 14) {
+            if (dayNumber === 15) {
+              const greeting = formatUserGreeting(user.preferred_greeting, user.display_name, user.email);
+              const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://deylon.app';
+              const paywallMsg = `✨ <b>${greeting}</b>\n\nYour 14-day Deylon free trial completed yesterday. We did some great work building your habits toward your goals!\n\nHow are you feeling now that the initial sprint is done?\n\nOur journey doesn't have to stop here. Upgrading to Deylon Pro unlocks the rest of your sprint (Days 15–21), custom daily plans, and personalized strategy updates.\n\nReady to keep building? Head to your dashboard to upgrade:\n${appUrl}/dashboard`;
+              await sendMessage(user.telegram_chat_id!, paywallMsg);
+            }
+            return;
+          }
+
           if (dayNumber > 21) return; // Sprint complete
 
           // Fetch today's card if it's pending

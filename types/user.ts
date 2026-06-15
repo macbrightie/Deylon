@@ -8,6 +8,8 @@ export interface UserProfile {
   timezone: string;
   location: string | null;
   intensity: Intensity;
+  is_pro?: boolean;
+  starting_level?: string;
 }
 
 export interface ExtractedProfile {
@@ -18,6 +20,7 @@ export interface ExtractedProfile {
   primary_goal?: string;
   timeline_years?: number;
   intensity?: Intensity;
+  startingLevel?: string;
   whys?: string[];
   constraints?: string[];
   strengths?: string[];
