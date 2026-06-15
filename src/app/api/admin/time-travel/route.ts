@@ -2,11 +2,6 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 export async function POST() {
-  // Prevent execution in production unless specifically enabled
-  if (process.env.NODE_ENV !== 'development' && process.env.NEXT_PUBLIC_ENABLE_GOD_MODE !== 'true') {
-    return NextResponse.json({ error: 'Unauthorized environment' }, { status: 403 });
-  }
-
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -15,9 +10,12 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Extra safety: require +test email or specific test email in production environments
-    if (process.env.NODE_ENV !== 'development' && !user.email?.includes('+test@') && user.email !== 'testingevil0@gmail.com') {
-      return NextResponse.json({ error: 'Not a test account' }, { status: 403 });
+    const isDev = process.env.NODE_ENV === 'development';
+    const isGodModeEnv = process.env.NEXT_PUBLIC_ENABLE_GOD_MODE === 'true';
+    const isTestAccount = user.email?.includes('+test@') || user.email === 'testingevil0@gmail.com';
+
+    if (!isDev && !isGodModeEnv && !isTestAccount) {
+      return NextResponse.json({ error: 'Unauthorized environment or account' }, { status: 403 });
     }
 
     // 1. Get active plan
