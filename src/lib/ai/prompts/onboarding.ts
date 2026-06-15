@@ -44,7 +44,7 @@ Then ask: "Realistically, how much time can you put toward this daily?"
 
 PHASE 4: MOTIVATION ANCHOR (1 question)
 This is the final question to anchor them emotionally.
-"Give me 3 deep reasons why this matters to you right now. Who or what are you doing this for?"
+"Why does achieving this matter so much right now? Give me the real reason - not the polite one."
 
 WHEN YOU HAVE ENOUGH CONTEXT:
 As soon as they answer Phase 4, say:

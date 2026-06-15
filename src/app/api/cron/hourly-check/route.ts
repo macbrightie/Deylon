@@ -78,25 +78,29 @@ export async function GET(request: NextRequest) {
 
           if (!card) return;
 
-          // Check if yesterday was missed (streak broken)
-          let streakBrokenMessage = '';
+          // 3.5 Check for Grace Period & Streak Breaks
+          let streakWarning = '';
           if (dayNumber > 1) {
-            const { data: yesterdayCard } = await supabase
+            const { data: pastCards } = await supabase
               .from('daily_cards')
-              .select('status')
+              .select('day_number, status')
               .eq('user_id', user.id)
               .eq('plan_id', plan.id)
-              .eq('day_number', dayNumber - 1)
-              .maybeSingle();
+              .in('day_number', [dayNumber - 1, dayNumber - 2]);
               
-            if (yesterdayCard && yesterdayCard.status === 'pending') {
-              streakBrokenMessage = `\n\n<i>(P.S. I noticed we missed yesterday's move, which resets the active streak. Let's start fresh and build it back up today.)</i>`;
+            const yesterdayCard = pastCards?.find(c => c.day_number === dayNumber - 1);
+            const twoDaysAgoCard = pastCards?.find(c => c.day_number === dayNumber - 2);
+
+            if (twoDaysAgoCard && twoDaysAgoCard.status === 'pending') {
+              streakWarning = `\n\n<i>(P.S. I noticed we missed the move from two days ago, which resets the active streak. Let's start fresh and build it back up today.)</i>`;
+            } else if (yesterdayCard && yesterdayCard.status === 'pending') {
+              streakWarning = `\n\n<i>(P.S. I noticed yesterday's move is still unchecked! You have a 24-hour grace period to finish it today alongside your new task. Knock them both out today so you don't lose your streak!)</i>`;
             }
           }
 
           // Send morning task reminder
           const greeting = formatUserGreeting(user.preferred_greeting, user.display_name, user.email);
-          const messageText = `🌅 <b>${greeting}</b>\n\nHere's a quick reminder of your daily move today:\n\n📌 <b>${card.task}</b>\n\n⏱ <i>${card.duration || '30 mins'}</i>\n\nYou've got this! Let's get it done today.${streakBrokenMessage}`;
+          const messageText = `🌅 <b>${greeting}</b>\n\nHere's a quick reminder of your daily move today:\n\n📌 <b>${card.task}</b>\n\n⏱ <i>${card.duration || '30 mins'}</i>\n\nYou've got this! Let's get it done today.${streakWarning}`;
 
           await sendMessage(user.telegram_chat_id!, messageText);
           sentCount++;

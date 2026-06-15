@@ -46,8 +46,8 @@ function calculateActiveStreak(cards: any[], currentDayNumber: number): number {
     if (card.day_number <= currentDayNumber) {
       if (card.status === 'done') {
         streak++;
-      } else if (card.status === 'pending' && card.day_number < currentDayNumber) {
-        // Streak broken by a missed past day
+      } else if (card.status === 'pending' && card.day_number < currentDayNumber - 1) {
+        // Streak broken by a missed past day (48-hour grace period)
         break;
       }
     }
@@ -1797,6 +1797,7 @@ export default function DashboardPage() {
 
   // Settings Panel States
   const [telegramConnected, setTelegramConnected] = useState(false);
+  const [telegramLinkingState, setTelegramLinkingState] = useState<string | null>(null);
   const [whatsappConnected, setWhatsappConnected] = useState(false);
   const [activeLanguage, setActiveLanguage] = useState('Auto-detect');
   const [habitFilter, setHabitFilter] = useState<'overall' | 'habit'>('overall');
@@ -1888,6 +1889,7 @@ export default function DashboardPage() {
 
         if (userProfile) {
           setTelegramConnected(!!userProfile.telegram_chat_id);
+          setTelegramLinkingState(userProfile.telegram_linking_state || null);
 
           // Detect client timezone and sync it with Supabase if it differs or is missing
           const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -1930,7 +1932,10 @@ export default function DashboardPage() {
             const pendingCard = dailyCards.find((c) => c.status === 'pending');
             const dayNum = pendingCard ? pendingCard.day_number : 1;
             
-            const cDay = getCalendarDayNumber(activePlan.start_date || activePlan.created_at);
+            // Pre-Start Phase: don't start the clock until they pick a start_date via Telegram
+            const cDay = activePlan.start_date 
+              ? getCalendarDayNumber(activePlan.start_date)
+              : 0;
             setCalendarDayNum(cDay);
 
             const supporting = activePlan.plan_data?.supporting_goals || [];
@@ -2459,6 +2464,23 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {telegramLinkingState !== 'active' && (
+          <div className="bg-[#f2f2f2] border border-[#e6e6e6] rounded-[20px] p-6 mb-5 text-center flex flex-col items-center">
+            <h2 className="text-[#1a1a1a] text-[20px] font-medium tracking-tight mb-2">
+              Your 21-Day Sprint is Paused ⏸️
+            </h2>
+            <p className="text-[#666666] text-sm mb-5 max-w-lg">
+              To officially start Day 1, you must connect your Telegram or WhatsApp messaging app. Once connected, the AI will ask you to schedule your official start date!
+            </p>
+            <button 
+              onClick={() => setShowTelegramPrompt(true)}
+              className="px-6 py-2.5 bg-black text-white rounded-[12px] font-medium text-sm hover:bg-gray-800 transition-colors"
+            >
+              Connect Messaging App
+            </button>
+          </div>
+        )}
+
         <div className="bg-white rounded-[20px] border border-black/5 p-5 mb-5">
           <div className="text-left px-[1.5%] mb-6 mt-1">
             <h2 className="text-[#1a1a1a] text-[28px] font-sans font-medium tracking-tight">
@@ -2482,7 +2504,7 @@ export default function DashboardPage() {
                   label={`Day ${dayNum} Move`}
                   onStatusChange={handleCardStatusChange}
                   langKey={langKey}
-                  isLocked={card?.status === 'pending' && dayNum < calendarDayNum}
+                  isLocked={telegramLinkingState !== 'active' || (card?.status === 'pending' && dayNum < calendarDayNum - 1)}
                 />
               );
             })}
