@@ -20,12 +20,12 @@ export function CTASection() {
 
         <div className="relative z-10 flex flex-col items-center gap-6 pt-4">
           <Link href="/start">
-            <Button 
-              variant="primary" 
-              size="lg" 
+            <Button
+              variant="primary"
+              size="lg"
               className="rounded-[999px] px-12 py-4 text-base font-medium bg-white text-black hover:bg-white/90 shadow-2xl shadow-white/10"
             >
-              Start my plan
+              Build my habit
             </Button>
           </Link>
           <p className="text-white/40 text-sm font-medium">

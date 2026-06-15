@@ -75,15 +75,15 @@ function ReactionBar({ message, onUpdateMetadata }: ReactionBarProps) {
     }
 
     const utterance = new SpeechSynthesisUtterance(message.text);
-    
+
     // Check if the message is in French using a simple regex for French accents
     const isFrench = /[éàèùâêîôûç]/i.test(message.text);
-    
+
     // Find free native browser voice
     const voices = window.speechSynthesis.getVoices();
-    const voice = voices.find((v) => 
-      isFrench 
-        ? v.lang.startsWith("fr") 
+    const voice = voices.find((v) =>
+      isFrench
+        ? v.lang.startsWith("fr")
         : v.lang.startsWith("en")
     );
 
@@ -125,9 +125,8 @@ function ReactionBar({ message, onUpdateMetadata }: ReactionBarProps) {
       {/* Copy Button */}
       <button
         onClick={handleCopy}
-        className={`w-[18px] h-[18px] hover:opacity-100 transition-all duration-150 relative ${
-          copied ? "opacity-100 text-[#104d3b] scale-110" : "opacity-40"
-        }`}
+        className={`w-[18px] h-[18px] hover:opacity-100 transition-all duration-150 relative ${copied ? "opacity-100 text-[#104d3b] scale-110" : "opacity-40"
+          }`}
         title={copied ? "Copied!" : "Copy message"}
       >
         <Image
@@ -141,9 +140,8 @@ function ReactionBar({ message, onUpdateMetadata }: ReactionBarProps) {
       {/* Volume (Speech) Button */}
       <button
         onClick={handleSpeech}
-        className={`w-[18px] h-[18px] hover:opacity-100 transition-all duration-150 relative ${
-          isPlaying ? "opacity-100 text-[#104d3b] scale-110 animate-pulse" : (listened ? "opacity-80" : "opacity-40")
-        }`}
+        className={`w-[18px] h-[18px] hover:opacity-100 transition-all duration-150 relative ${isPlaying ? "opacity-100 text-[#104d3b] scale-110 animate-pulse" : (listened ? "opacity-80" : "opacity-40")
+          }`}
         title={isPlaying ? "Stop listening" : "Listen to message"}
       >
         <Image
@@ -157,9 +155,8 @@ function ReactionBar({ message, onUpdateMetadata }: ReactionBarProps) {
       {/* Like Button */}
       <button
         onClick={handleLike}
-        className={`w-[18px] h-[18px] hover:opacity-100 transition-all duration-150 relative ${
-          liked ? "opacity-100 scale-110" : "opacity-40"
-        }`}
+        className={`w-[18px] h-[18px] hover:opacity-100 transition-all duration-150 relative ${liked ? "opacity-100 scale-110" : "opacity-40"
+          }`}
         title="Like Deylon's reply"
       >
         <Image
@@ -173,9 +170,8 @@ function ReactionBar({ message, onUpdateMetadata }: ReactionBarProps) {
       {/* Dislike Button */}
       <button
         onClick={handleDislike}
-        className={`w-[18px] h-[18px] hover:opacity-100 transition-all duration-150 relative ${
-          disliked ? "opacity-100 scale-110" : "opacity-40"
-        }`}
+        className={`w-[18px] h-[18px] hover:opacity-100 transition-all duration-150 relative ${disliked ? "opacity-100 scale-110" : "opacity-40"
+          }`}
         title="Dislike Deylon's reply"
       >
         <Image
@@ -236,17 +232,15 @@ function ChatMessage({ message, onUpdateMetadata }: ChatMessageProps) {
       className="space-y-1 text-left"
     >
       <p
-        className={`text-[13px] font-sans font-semibold tracking-wide mb-1 ${
-          isDeylon ? "text-[#1a1a1a]" : "text-[#104d3b]"
-        }`}
+        className={`text-[13px] font-sans font-semibold tracking-wide mb-1 ${isDeylon ? "text-[#1a1a1a]" : "text-[#104d3b]"
+          }`}
       >
         {isDeylon ? "Deylon" : "Me"}
       </p>
       <div className="relative pl-3.5">
         <div
-          className={`absolute left-0 top-[3px] bottom-[3px] w-[3px] rounded-full ${
-            isDeylon ? "bg-[#1a1a1a]/35" : "bg-[#104d3b]"
-          }`}
+          className={`absolute left-0 top-[3px] bottom-[3px] w-[3px] rounded-full ${isDeylon ? "bg-[#1a1a1a]/35" : "bg-[#104d3b]"
+            }`}
         />
         <p className="text-[15px] md:text-[16px] text-[#1a1a1a] font-sans leading-relaxed">
           {message.text}
@@ -319,19 +313,19 @@ function ChatPanel({
   return (
     <div className="flex flex-col h-full">
       {/* Messages — 60% width of container, centred */}
-      <div 
+      <div
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto pt-6 pb-2 space-y-5 scrollbar-none"
       >
         <div className="w-full px-[12px] md:w-[60%] md:px-0 mx-auto space-y-5">
-        {messages.map((msg) => (
-          <ChatMessage
-            key={msg.id}
-            message={msg}
-            onUpdateMetadata={(key, val) => onUpdateMetadata(msg.id, key, val)}
-          />
-        ))}
-        {generating && <Spinner />}
+          {messages.map((msg) => (
+            <ChatMessage
+              key={msg.id}
+              message={msg}
+              onUpdateMetadata={(key, val) => onUpdateMetadata(msg.id, key, val)}
+            />
+          ))}
+          {generating && <Spinner />}
         </div>
       </div>
 
@@ -348,8 +342,8 @@ function ChatPanel({
             onFocus={handleFocus}
             disabled={generating}
             placeholder={
-              generating 
-                ? "Deylon is writing..." 
+              generating
+                ? "Deylon is writing..."
                 : (isListening ? "Listening..." : "Reply...")
             }
             rows={2}
@@ -479,16 +473,15 @@ function EmailPanel({ onSubmit, loading }: EmailPanelProps) {
     <div className="flex-1 flex flex-col justify-center px-10 md:px-16 pb-10">
       <div className="relative">
         <p className="text-[15px] md:text-[17px] font-sans text-[#1a1a1a] leading-relaxed mb-8 max-w-md">
-          {loading 
-            ? "Sending your magic link now..." 
+          {loading
+            ? "Sending your magic link now..."
             : "One last thing, where should I send your plan? I'll save it so you can always pick up right where you left off."}
         </p>
 
         {/* Border only visible when email has text */}
         <div
-          className={`flex items-center gap-0 pb-2 mb-8 max-w-sm border-b-2 transition-colors duration-200 ${
-            email.trim() ? "border-[#1a1a1a]" : "border-transparent"
-          }`}
+          className={`flex items-center gap-0 pb-2 mb-8 max-w-sm border-b-2 transition-colors duration-200 ${email.trim() ? "border-[#1a1a1a]" : "border-transparent"
+            }`}
         >
           <input
             type="email"
@@ -539,7 +532,7 @@ function OpenEmailButton() {
       }}
       className="px-8 py-4 bg-[#1a1a1a] text-white font-sans text-[14px] font-medium rounded-full hover:bg-[#333] transition-colors tracking-wide cursor-pointer"
     >
-      Open email app
+      Check for magic link
     </button>
   );
 }
@@ -910,11 +903,10 @@ export function EmbeddedChat({
             <button
               key={s}
               onClick={() => setChatState(s)}
-              className={`px-3 py-1 text-[11px] font-mono rounded border transition-all ${
-                chatState === s
+              className={`px-3 py-1 text-[11px] font-mono rounded border transition-all ${chatState === s
                   ? "bg-[#1a1a1a] text-white border-[#1a1a1a]"
                   : "text-[#1a1a1a]/50 border-[#1a1a1a]/20 hover:border-[#1a1a1a]/50"
-              }`}
+                }`}
             >
               {s}
             </button>
