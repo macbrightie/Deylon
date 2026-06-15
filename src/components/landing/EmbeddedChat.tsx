@@ -524,7 +524,7 @@ function EmailPanel({ onSubmit, loading }: EmailPanelProps) {
 
 // ─── Open Email Button ───────────────────────────────────────────────────
 
-function OpenEmailButton() {
+/*function OpenEmailButton() {
   return (
     <button
       onClick={() => {
@@ -535,7 +535,7 @@ function OpenEmailButton() {
       Check for magic link
     </button>
   );
-}
+}*/
 
 // ─── Dashboard panel ─────────────────────────────────────────────────────────
 
@@ -566,9 +566,9 @@ function DashboardPanel() {
         </div>
 
         {/* CTA button */}
-        <div>
+        {/* <div>
           <OpenEmailButton />
-        </div>
+        </div> */}
       </div>
 
       {/* Bottom warm glow — behind content */}
