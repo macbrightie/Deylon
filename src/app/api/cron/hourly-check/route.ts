@@ -129,6 +129,7 @@ export async function GET(request: NextRequest) {
           if (!plan) return;
 
           const dayNumber = getDayNumber(plan.start_date || new Date(plan.created_at), user.timezone || 'Africa/Lagos');
+          if (!user.is_pro && dayNumber > 14) return;
           if (dayNumber > 21) return; // Sprint complete
 
           // Fetch today's card status
@@ -195,6 +196,7 @@ export async function GET(request: NextRequest) {
           if (!plan) return;
 
           const dayNumber = getDayNumber(plan.start_date || new Date(plan.created_at), user.timezone || 'Africa/Lagos');
+          if (!user.is_pro && dayNumber > 14) return;
           if (dayNumber > 21) return; // Sprint complete
 
           // Fetch today's card status

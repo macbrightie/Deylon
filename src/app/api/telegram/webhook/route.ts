@@ -398,7 +398,7 @@ export async function POST(request: NextRequest) {
       // 2. Determine if user is in onboarding or active coaching (has a plan)
       const { data: plan } = await supabase
         .from('plans')
-        .select('id')
+        .select('id, created_at, start_date')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
