@@ -2227,9 +2227,27 @@ export default function DashboardPage() {
       await supabase.from('plan_updates').delete().eq('user_id', authUser.id);
       await supabase.from('health_scores').delete().eq('user_id', authUser.id);
 
+      // Reset user-specific columns in DB so Deylon does not remember the name or Telegram state
+      await supabase
+        .from('users')
+        .update({
+          display_name: null,
+          telegram_chat_id: null,
+          telegram_linking_state: 'not_connected',
+          preferred_greeting: null,
+          carry_over_count_this_week: 0,
+          starting_level: 'beginner',
+          intensity: 'serious',
+          location: null
+        })
+        .eq('id', authUser.id);
+
       localStorage.removeItem("deylon_onboarding_transcript");
       localStorage.removeItem("deylon_onboarding_email");
       localStorage.removeItem("deylon_onboarding_completed");
+      localStorage.removeItem(`deylon_display_name_${authUser.id}`);
+      localStorage.removeItem(`deylon_username_${authUser.id}`);
+      localStorage.removeItem(`deylon_telegram_prompt_shown_${authUser.id}`);
 
       window.location.href = '/';
     } catch (err) {
