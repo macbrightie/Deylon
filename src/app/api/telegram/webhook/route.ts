@@ -185,15 +185,26 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', user.id);
 
+        const { data: activePlan } = await supabase
+          .from('plans')
+          .select('plan_data')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const timelineText = (activePlan?.plan_data as any)?.timelineGoal || '3-month';
+        const challengeDays = user.is_pro ? 21 : 14;
+
         const timezone = user.timezone || 'Africa/Lagos';
         const userLocalTime = new Date(
           new Date().toLocaleString('en-US', { timeZone: timezone })
         );
         const currentHour = userLocalTime.getHours();
 
-        let promptMsg = `When would you like to start your 21-day challenge? Reply "today", "tomorrow", or type a relative date (e.g., "in 3 days" or a date like "YYYY-MM-DD").`;
+        let promptMsg = `When would you like to start your ${challengeDays}-day challenge of your ${timelineText} plan? Reply "today", "tomorrow", "Wednesday", "Friday", or type a relative date (e.g., "in 3 days" or a date like "YYYY-MM-DD").`;
         if (currentHour >= 21) {
-          promptMsg = `Since it's past 9 PM, when would you like to start your 21-day challenge? Reply "tomorrow" or type a relative date (e.g., "in 3 days" or a date like "YYYY-MM-DD").`;
+          promptMsg = `Since it's past 9 PM, when would you like to start your ${challengeDays}-day challenge of your ${timelineText} plan? Reply "tomorrow", "Wednesday", "Friday", or type a relative date (e.g., "in 3 days" or a date like "YYYY-MM-DD").`;
         }
 
         await sendMessage(
@@ -224,18 +235,39 @@ export async function POST(request: NextRequest) {
         } else if (cleanText === 'tomorrow') {
           startDate = getTomorrowISO(timezone);
         } else {
-          // Check for relative day offset e.g., "in 3 days", "3 days", "in 3 days time"
-          const relativeMatch = cleanText.match(/(?:in\s+)?(\d+)\s*days?/i);
-          if (relativeMatch) {
-            const daysOffset = parseInt(relativeMatch[1], 10);
+          // Check for weekdays first, e.g. "wednesday", "friday"
+          const weekdays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+          let matchedDayIndex = -1;
+          for (let i = 0; i < weekdays.length; i++) {
+            if (cleanText.includes(weekdays[i])) {
+              matchedDayIndex = i;
+              break;
+            }
+          }
+
+          if (matchedDayIndex !== -1) {
+            const todayDayIndex = userLocalTime.getDay(); // 0 is Sunday
+            let daysOffset = matchedDayIndex - todayDayIndex;
+            if (daysOffset <= 0) {
+              daysOffset += 7; // Next week
+            }
             const date = new Date(userLocalTime);
             date.setDate(date.getDate() + daysOffset);
             startDate = date.toISOString().split('T')[0];
           } else {
-            // Check for YYYY-MM-DD
-            const dateMatch = cleanText.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-            if (dateMatch) {
-              startDate = cleanText;
+            // Check for relative day offset e.g., "in 3 days", "3 days", "in 3 days time"
+            const relativeMatch = cleanText.match(/(?:in\s+)?(\d+)\s*days?/i);
+            if (relativeMatch) {
+              const daysOffset = parseInt(relativeMatch[1], 10);
+              const date = new Date(userLocalTime);
+              date.setDate(date.getDate() + daysOffset);
+              startDate = date.toISOString().split('T')[0];
+            } else {
+              // Check for YYYY-MM-DD
+              const dateMatch = cleanText.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+              if (dateMatch) {
+                startDate = cleanText;
+              }
             }
           }
         }
@@ -290,7 +322,19 @@ export async function POST(request: NextRequest) {
             await sendMessage(chatId, `🌅 <b>Your challenge is scheduled to start on ${startDate}!</b>\n\nI'll deliver your first daily move on that morning at 10 AM. Rest up and get ready!`);
           }
         } else {
-          await sendMessage(chatId, `Please reply with "today", "tomorrow", or type a relative date (e.g., "in 3 days" or a date like "YYYY-MM-DD").`);
+          // Fetch active plan to get timelineGoal for dynamic fallback message
+          const { data: activePlan } = await supabase
+            .from('plans')
+            .select('plan_data')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          const timelineText = (activePlan?.plan_data as any)?.timelineGoal || '3-month';
+          const challengeDays = user.is_pro ? 21 : 14;
+
+          await sendMessage(chatId, `Please reply with "today", "tomorrow", "Wednesday", "Friday", or type a relative date (e.g., "in 3 days" or a date like "YYYY-MM-DD") to select the start date of your ${challengeDays}-day challenge of your ${timelineText} plan.`);
         }
         return NextResponse.json({ ok: true });
       }
