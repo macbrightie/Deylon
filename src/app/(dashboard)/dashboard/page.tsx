@@ -326,7 +326,7 @@ function FlashCard({
       if (onPaywallLockClick) onPaywallLockClick();
       return;
     }
-    if (isLocked) return;
+    if (lockedLabel) return;
     setActiveFace('black');
   };
 
@@ -2552,9 +2552,7 @@ export default function DashboardPage() {
                   onStatusChange={handleCardStatusChange}
                   langKey={langKey}
                   lockedLabel={
-                    telegramLinkingState !== 'active' 
-                      ? '⏸️ PAUSED' 
-                      : ((card?.status === 'pending' && dayNum < calendarDayNum - 1) ? '❌ MISSED' : null)
+                    (card?.status === 'pending' && dayNum < calendarDayNum - 1) ? '❌ MISSED' : null
                   }
                   isPaywallLocked={!isPro && dayNum >= 15}
                   onPaywallLockClick={() => {
