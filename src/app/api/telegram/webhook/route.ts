@@ -94,7 +94,10 @@ export async function POST(request: NextRequest) {
 
       if (dbUserErr || !dbUser) {
         console.error('[Telegram Webhook] Database link error for user:', userId, 'Error:', dbUserErr);
-        await sendMessage(chatId, '❌ Could not find your account. Please try again from your Deylon dashboard.');
+        await sendMessage(
+          chatId,
+          `❌ Could not find your account. (Debug: token_len=${token?.length || 0}, decoded_userId="${userId}", error=${dbUserErr ? JSON.stringify(dbUserErr) : 'no_user_found'}). Please try again from your Deylon dashboard.`
+        );
         return NextResponse.json({ ok: true });
       }
 
