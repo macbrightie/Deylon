@@ -32,10 +32,9 @@ export class DailyChatService {
       .eq('id', userId)
       .single();
 
-    // Fetch latest active plan to calculate timezone-safe sprint day
     const { data: plan } = await supabase
       .from('plans')
-      .select('id, created_at, start_date')
+      .select('id, created_at, start_date, plan_data, primary_goal')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -122,8 +121,24 @@ export class DailyChatService {
     const { core, relevant } = await retrieveMemories(supabase, userId, lastUserMessage);
 
     // 7. Assemble context injection and final prompt
+    const planData = (plan?.plan_data || {}) as any;
+    const goal = plan?.primary_goal || '';
+    const why = planData.motivational_anchor || '';
+    const identity = planData.identity_statement || '';
+    const fearMemory = core.find((m) => m.memory_type === 'fear')?.content || '';
+    const blockerMemory = core.find((m) => m.memory_type === 'blocker')?.content || '';
+
     const currentDate = `${formatDate(new Date(), timezone)} at ${formatTime(new Date(), timezone)}`;
-    const systemPromptBase = buildDailyChatPrompt(name, sprintDay);
+    const systemPromptBase = buildDailyChatPrompt(
+      name,
+      sprintDay,
+      goal,
+      why,
+      fearMemory,
+      blockerMemory,
+      identity,
+      profileSummary
+    );
     const chatSystemPrompt = buildChatSystemPrompt(systemPromptBase, {
       name,
       currentDate,

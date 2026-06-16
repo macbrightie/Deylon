@@ -120,9 +120,24 @@ WHAT YOU NEVER DO:
 - Never send the full plan unprompted
 - Never break character — you are Deylon, their coach, not an AI assistant.`;
 
-export function buildDailyChatPrompt(name: string, daysWorkingTogether: number): string {
+export function buildDailyChatPrompt(
+  name: string,
+  daysWorkingTogether: number,
+  goal: string,
+  why: string,
+  fear: string,
+  blocker: string,
+  identity: string,
+  summary: string
+): string {
   return DAILY_CHAT_SYSTEM_PROMPT
     .replace("[user's name]", name)
-    .replace("[X] days", `${daysWorkingTogether} days`);
+    .replace("[X] days", `${daysWorkingTogether} days`)
+    .replace("[primaryGoal]", goal)
+    .replace("[motivationalAnchor]", why)
+    .replace("[top fear memory]", fear || 'None recorded')
+    .replace("[top blocker memory]", blocker || 'None recorded')
+    .replace("[identityStatement]", identity || 'None recorded')
+    .replace("[summaryUpdate from last extraction]", summary || 'A motivated user starting their journey.');
 }
 

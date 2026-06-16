@@ -2238,7 +2238,10 @@ export default function DashboardPage() {
           carry_over_count_this_week: 0,
           starting_level: 'beginner',
           intensity: 'serious',
-          location: null
+          location: null,
+          profile_summary: null,
+          motivation_level: null,
+          tone_preference: 'warm'
         })
         .eq('id', authUser.id);
 
