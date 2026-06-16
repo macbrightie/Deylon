@@ -3,7 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { sendMessage } from '@/lib/telegram/bot';
 import { formatUserGreeting } from '@/lib/telegram/message';
 import { getDayNumber, getTodayISO, getTomorrowISO } from '@/lib/utils/date';
-import { parseTasks } from '@/lib/utils';
+import { parseTasks, formatTaskForTelegram } from '@/lib/utils';
 
 async function sendSplitMessages(chatId: number, messages: string[]) {
   for (let i = 0; i < messages.length; i++) {
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
 
           // Send morning task reminder
           const greeting = formatUserGreeting(user.preferred_greeting, user.display_name, user.email);
-          const messageText = `🌅 <b>${greeting}</b>\n\nHere's a quick reminder of your daily move today:\n\n📌 <b>${card.task}</b>\n\n⏱ <i>${card.duration || '30 mins'}</i>\n\nYou've got this! Let's get it done today.${streakWarning}`;
+          const messageText = `🌅 <b>${greeting}</b>\n\nHere's a quick reminder of your daily move today:\n\n📌 <b>${formatTaskForTelegram(card.task)}</b>\n\n⏱ <i>${card.duration || '30 mins'}</i>\n\nYou've got this! Let's get it done today.${streakWarning}`;
 
           await sendMessage(user.telegram_chat_id!, messageText);
           sentCount++;
@@ -235,7 +235,7 @@ export async function GET(request: NextRequest) {
             if (!Array.isArray(bubbles) || bubbles.length === 0) {
               bubbles = [
                 `🌅 <b>Tomorrow's Move — Day ${nextDayNumber}</b>`,
-                `📌 <b>Task:</b> ${tomorrowCard.task}\n\n⏱ <i>Duration: ${tomorrowCard.duration || '30 mins'}</i>`,
+                `📌 <b>Task:</b>\n${formatTaskForTelegram(tomorrowCard.task)}\n\n⏱ <i>Duration: ${tomorrowCard.duration || '30 mins'}</i>`,
               ];
             }
 
@@ -274,7 +274,7 @@ export async function GET(request: NextRequest) {
                   if (!Array.isArray(bubbles) || bubbles.length === 0) {
                     bubbles = [
                       `🌅 <b>Tomorrow's Move — Day ${nextDayNumber}</b>`,
-                      `📌 <b>Task:</b> ${tomorrowCard.task}\n\n⏱ <i>Duration: ${tomorrowCard.duration || '30 mins'}</i>`,
+                      `📌 <b>Task:</b>\n${formatTaskForTelegram(tomorrowCard.task)}\n\n⏱ <i>Duration: ${tomorrowCard.duration || '30 mins'}</i>`,
                     ];
                   }
                   await sendSplitMessages(user.telegram_chat_id!, bubbles);

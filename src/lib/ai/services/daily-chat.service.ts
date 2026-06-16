@@ -28,7 +28,7 @@ export class DailyChatService {
     // 1. Fetch user profile and summary info
     const { data: user } = await supabase
       .from('users')
-      .select('profile_summary, tone_preference, timezone')
+      .select('profile_summary, tone_preference, timezone, display_name')
       .eq('id', userId)
       .single();
 
@@ -58,7 +58,7 @@ export class DailyChatService {
 
     const messages = (conversation.messages || []) as ConversationMessage[];
     const extractedProfile = conversation.extracted_profile || {};
-    const name = extractedProfile.name || 'Friend';
+    const name = user?.display_name || extractedProfile.name || 'Friend';
     const profileSummary = user?.profile_summary || extractedProfile.context || 'A motivated user starting their journey.';
     const tonePref = (user?.tone_preference || 'warm') as 'casual' | 'warm' | 'direct' | 'reflective';
 

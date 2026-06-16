@@ -22,7 +22,7 @@ export function parseTasks(taskText: string): TaskItem[] {
   for (const sentence of sentences) {
     const cleanLower = sentence.toLowerCase();
     const isExample = cleanLower.startsWith('example:') || sentence.startsWith('(Example:') || cleanLower.startsWith('(example:');
-    const isClue = cleanLower.startsWith('clue:') || sentence.startsWith('(Clue:') || cleanLower.startsWith('(clue:') || cleanLower.startsWith('hint:') || sentence.startsWith('(Hint:') || cleanLower.startsWith('(hint:');
+    const isClue = cleanLower.startsWith('clue:') || sentence.startsWith('(Clue:') || cleanLower.startsWith('(clue:') || cleanLower.startsWith('hint:') || sentence.startsWith('(Hint:') || cleanLower.startsWith('(hint:') || cleanLower.startsWith('strategy:') || sentence.startsWith('(Strategy:') || cleanLower.startsWith('(strategy:');
 
     if (isExample && items.length > 0) {
       items[items.length - 1].example = sentence;
@@ -33,4 +33,11 @@ export function parseTasks(taskText: string): TaskItem[] {
     }
   }
   return items;
+}
+
+export function formatTaskForTelegram(taskText: string): string {
+  if (!taskText) return '';
+  return taskText
+    .replace(/\s*Daily Reps:/g, '\nDaily Reps:')
+    .replace(/\s*Strategy:/g, '\nStrategy:');
 }

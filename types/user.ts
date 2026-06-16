@@ -10,6 +10,8 @@ export interface UserProfile {
   intensity: Intensity;
   is_pro?: boolean;
   starting_level?: string;
+  display_name?: string | null;
+  preferred_greeting?: string | null;
 }
 
 export interface ExtractedProfile {

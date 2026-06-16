@@ -291,6 +291,7 @@ function FlashCard({
   const formatted = `${today.getDate().toString().padStart(2,'0')}/${(today.getMonth()+1).toString().padStart(2,'0')}/${today.getFullYear()}`;
 
   const taskItems = parseTasks(taskText);
+  const strategyClue = taskItems.find(item => item.clue && (item.clue.toLowerCase().startsWith('strategy:') || item.clue.toLowerCase().startsWith('(strategy:')))?.clue;
 
   const [checkedStates, setCheckedStates] = useState<boolean[]>([]);
 
@@ -469,7 +470,7 @@ function FlashCard({
                           {item.example}
                         </p>
                       )}
-                      {item.clue && (
+                      {item.clue && !item.clue.toLowerCase().startsWith('strategy:') && !item.clue.toLowerCase().startsWith('(strategy:') && (
                         <p className={`text-[11.5px] font-sans leading-[1.3] mt-0.5 transition-all duration-300 ${
                           isChecked ? 'text-white/20 line-through' : 'text-white/55'
                         }`}>
@@ -484,6 +485,13 @@ function FlashCard({
               <p className="text-[12px] font-sans text-white/50 text-center">
                 No active moves assigned. Relax and review your plan.
               </p>
+            )}
+            {strategyClue && (
+              <div className="mt-3 pt-3 border-t border-white/10 text-left">
+                <p className="text-[11px] font-sans text-white/55 leading-[1.35] italic">
+                  💡 {strategyClue}
+                </p>
+              </div>
             )}
           </div>
 
@@ -1905,14 +1913,14 @@ export default function DashboardPage() {
         console.log('[DEBUG-load] onboardingName:', onboardingName);
         console.log('[DEBUG-load] authUser.user_metadata:', authUser?.user_metadata);
 
-        const dbName = cachedName 
-          || userProfile?.display_name 
+        const dbName = userProfile?.display_name 
+          || cachedName 
           || authUser?.user_metadata?.display_name 
           || onboardingName 
           || userProfile?.email?.split('@')[0] 
           || authUser?.email?.split('@')[0] 
           || 'You';
-        const dbUsername = cachedUsername || userProfile?.username || authUser?.user_metadata?.username || '';
+        const dbUsername = userProfile?.username || cachedUsername || authUser?.user_metadata?.username || '';
         console.log('[DEBUG-load] resolved dbName:', dbName);
         console.log('[DEBUG-load] resolved dbUsername:', dbUsername);
 
@@ -1989,18 +1997,14 @@ export default function DashboardPage() {
 
             // Active UI focus day is the earliest pending day or the calendar day
             setActiveDay(Math.min(dayNum, cDay));
-            setActivePage(Math.min(7, Math.ceil(Math.min(dayNum, cDay) / 3)));
+            setActivePage(Math.max(1, Math.min(7, Math.ceil(Math.min(dayNum, cDay) / 3))));
           }
 
-          // Trigger Telegram connect prompt if not connected and not shown in this session yet
+          // Trigger Telegram connect prompt if not connected
           if (userProfile && !userProfile.telegram_chat_id) {
-            const hasShownPrompt = localStorage.getItem(`deylon_telegram_prompt_shown_${authUser.id}`);
-            if (!hasShownPrompt) {
-              setTimeout(() => {
-                setShowTelegramPrompt(true);
-                localStorage.setItem(`deylon_telegram_prompt_shown_${authUser.id}`, 'true');
-              }, 1500);
-            }
+            setTimeout(() => {
+              setShowTelegramPrompt(true);
+            }, 500);
           }
         } else {
           // Check if there is a completed conversation to build a plan from
@@ -2476,7 +2480,7 @@ export default function DashboardPage() {
               {t('hey', langKey)} <span className="font-bold">{profileName}.</span>
             </h1>
             <p className="font-sans text-[20px] md:text-[24px] font-medium text-[#4e4e55] leading-relaxed mt-2 tracking-tight max-w-3xl">
-              {plan?.plan_data?.motivational_anchor || 'Start building the dream.'}
+              You're building habits to help achieve {plan?.plan_data?.primary_goal ? plan.plan_data.primary_goal.toLowerCase() : 'your goals'}.
             </p>
           </div>
           <div className="flex items-center gap-3 mt-1 flex-shrink-0">
@@ -2522,22 +2526,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {telegramLinkingState !== 'active' && (
-          <div className="bg-[#f2f2f2] border border-[#e6e6e6] rounded-[20px] p-6 mb-5 text-center flex flex-col items-center">
-            <h2 className="text-[#1a1a1a] text-[20px] font-medium tracking-tight mb-2">
-              Your 21-Day Sprint is Paused ⏸️
-            </h2>
-            <p className="text-[#666666] text-sm mb-5 max-w-lg">
-              To officially start Day 1, you must connect your Telegram or WhatsApp messaging app. Once connected, the AI will ask you to schedule your official start date!
-            </p>
-            <button 
-              onClick={() => setShowTelegramPrompt(true)}
-              className="px-6 py-2.5 bg-black text-white rounded-[12px] font-medium text-sm hover:bg-gray-800 transition-colors"
-            >
-              Connect Messaging App
-            </button>
-          </div>
-        )}
+
 
         <div className="bg-white rounded-[20px] border border-black/5 p-5 mb-5">
           <div className="text-left px-[1.5%] mb-6 mt-1">
@@ -2767,7 +2756,7 @@ export default function DashboardPage() {
               }}
               className="w-full py-3 bg-[#1559EF] hover:bg-[#3b7aff] text-white rounded-[12px] font-sans font-medium text-center transition-colors text-[14px]"
             >
-              Upgrade now for $12/mo
+              Upgrade now for $3.99/mo
             </Link>
             <Button
               variant="outline"

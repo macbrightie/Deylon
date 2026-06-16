@@ -13,7 +13,7 @@ const plans = [
   },
   {
     name: "Pro",
-    price: "$12",
+    price: "$3.99",
     period: "/mo",
     description: "For those serious about optimization and high-performance living.",
     features: ["Unlimited Life Plans", "Deep-dive Strategy Sessions", "Advanced Analytics", "Priority Support", "Custom Integrations"],

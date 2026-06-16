@@ -9,7 +9,7 @@ function BuildingClient() {
   const [steps, setSteps] = useState<string[]>([
     'Building your plan...',
     'Analyzing your goals...',
-    'Breaking 1-year into quarters...',
+    'Structuring your timeline...',
     'Writing your first 21-day sprint challenge...',
     'Almost ready.',
   ]);
@@ -41,12 +41,32 @@ function BuildingClient() {
           const goal = profile.primaryGoal ? `"${profile.primaryGoal}"` : 'your goal';
           const goalType = profile.primaryGoalType || 'other';
           
+          const rawTimeline = profile.timelineGoal || '';
+          let timelineDisplay = 'timeline';
+          if (rawTimeline) {
+            const cleanTimeline = rawTimeline.toLowerCase().trim();
+            if (cleanTimeline.includes('year') || cleanTimeline.includes('yr')) {
+              const yrs = cleanTimeline.match(/(\d+)/);
+              timelineDisplay = yrs ? `${yrs[1]}-year plan` : '1-year plan';
+            } else if (cleanTimeline.includes('month') || cleanTimeline.includes('mo')) {
+              const mos = cleanTimeline.match(/(\d+)/);
+              timelineDisplay = mos ? `${mos[1]}-month plan` : 'multi-month plan';
+            } else if (cleanTimeline.includes('week') || cleanTimeline.includes('wk')) {
+              const wks = cleanTimeline.match(/(\d+)/);
+              timelineDisplay = wks ? `${wks[1]}-week plan` : 'multi-week plan';
+            } else {
+              timelineDisplay = `${rawTimeline} plan`;
+            }
+          } else {
+            timelineDisplay = '1-year plan';
+          }
+
           const welcome = `Building plan for ${name}...`;
           
           let dynamicSteps = [
             welcome,
             `Mapping your baseline strategy for ${goal}...`,
-            'Breaking 1-year into quarters...',
+            `Breaking ${timelineDisplay} into manageable phases...`,
             'Writing your first 21-day sprint challenge...',
             'Almost ready.'
           ];
@@ -55,7 +75,7 @@ function BuildingClient() {
             dynamicSteps = [
               welcome,
               `Mapping your customer discovery strategy for ${goal}...`,
-              'Breaking quarterly business milestones into sprints...',
+              `Breaking ${timelineDisplay} into monthly sprints...`,
               'Writing your first 21-day business action cards...',
               'Almost ready.'
             ];
@@ -63,7 +83,7 @@ function BuildingClient() {
             dynamicSteps = [
               welcome,
               `Mapping sustainable daily routines for ${goal}...`,
-              'Breaking quarterly health milestones into sprints...',
+              `Breaking ${timelineDisplay} into daily checkpoints...`,
               'Writing your first 21-day fitness habit cards...',
               'Almost ready.'
             ];
@@ -71,7 +91,7 @@ function BuildingClient() {
             dynamicSteps = [
               welcome,
               `Designing build-in-public checkpoints for ${goal}...`,
-              'Breaking quarters into monthly audience milestones...',
+              `Breaking ${timelineDisplay} into weekly content buckets...`,
               'Writing your first 21-day content creation cards...',
               'Almost ready.'
             ];
@@ -79,7 +99,7 @@ function BuildingClient() {
             dynamicSteps = [
               welcome,
               `Analyzing target role skill stacks and gaps for ${goal}...`,
-              'Structuring portfolio build sprints and practice guides...',
+              `Structuring your ${timelineDisplay} skill acquisition path...`,
               'Writing your first 21-day career transition cards...',
               'Almost ready.'
             ];
@@ -87,7 +107,7 @@ function BuildingClient() {
             dynamicSteps = [
               welcome,
               `Auditing financial and visa milestones for ${goal}...`,
-              'Mapping local connection discovery sprints...',
+              `Breaking your ${timelineDisplay} relocation steps into sprints...`,
               'Writing your first 21-day relocation action cards...',
               'Almost ready.'
             ];

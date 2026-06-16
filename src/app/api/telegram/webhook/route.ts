@@ -6,7 +6,7 @@ import { DailyChatService } from '@/lib/ai/services/daily-chat.service';
 import { MemoryService } from '@/lib/ai/services/memory.service';
 import { OnboardingService } from '@/lib/ai/services/onboarding.service';
 import { getDayNumber, getTodayISO, getTomorrowISO } from '@/lib/utils/date';
-import { parseTasks } from '@/lib/utils';
+import { parseTasks, formatTaskForTelegram } from '@/lib/utils';
 
 interface TelegramUpdate {
   update_id: number;
@@ -74,8 +74,7 @@ export async function POST(request: NextRequest) {
 
       const supabase = await createServiceClient();
 
-      // Look up user by token stored temporarily in users table or a linking table
-      // Token format: userId encoded as base64url
+      // Look up user by token stored temporarily in users table
       let userId: string;
       try {
         userId = Buffer.from(token, 'base64url').toString('utf-8');
@@ -86,26 +85,73 @@ export async function POST(request: NextRequest) {
 
       console.log('[Telegram Webhook] Linking account. Decoded userId:', userId, 'chatId:', chatId);
 
-      const { data: user, error } = await supabase
+      // Fetch user profile details
+      const { data: dbUser, error: dbUserErr } = await supabase
         .from('users')
-        .update({ 
-          telegram_chat_id: chatId,
-          telegram_linking_state: 'awaiting_greeting'
-        })
+        .select('id, display_name, email, is_pro, timezone')
         .eq('id', userId)
-        .select('id')
         .single();
 
-      if (error || !user) {
-        console.error('[Telegram Webhook] Database link error for user:', userId, 'Error:', error);
-        await sendMessage(chatId, '❌ Could not link your account. Please try again from your Deylon dashboard.');
+      if (dbUserErr || !dbUser) {
+        console.error('[Telegram Webhook] Database link error for user:', userId, 'Error:', dbUserErr);
+        await sendMessage(chatId, '❌ Could not find your account. Please try again from your Deylon dashboard.');
         return NextResponse.json({ ok: true });
       }
 
-      await sendMessage(
-        chatId,
-        '👋 Hey, this is Deylon.\n\nBefore we get started, what should I call you?'
-      );
+      // Fetch active plan to get timelineGoal
+      const { data: activePlan } = await supabase
+        .from('plans')
+        .select('plan_data')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const timelineText = (activePlan?.plan_data as any)?.timelineGoal || '3-month';
+      const challengeDays = dbUser.is_pro ? 21 : 14;
+
+      if (dbUser.display_name && dbUser.display_name.trim().length > 0) {
+        // Skip name collection, transition directly to awaiting_start_date
+        await supabase
+          .from('users')
+          .update({ 
+            telegram_chat_id: chatId,
+            telegram_linking_state: 'awaiting_start_date'
+          })
+          .eq('id', userId);
+
+        const timezone = dbUser.timezone || 'Africa/Lagos';
+        const userLocalTime = new Date(
+          new Date().toLocaleString('en-US', { timeZone: timezone })
+        );
+        const currentHour = userLocalTime.getHours();
+
+        let promptMsg = `When would you like to start your ${challengeDays}-day challenge of your ${timelineText} plan? Reply "today", "tomorrow", "Wednesday", "Friday", or type a relative date (e.g., "in 3 days" or a date like "YYYY-MM-DD").`;
+        if (currentHour >= 21) {
+          promptMsg = `Since it's past 9 PM, when would you like to start your ${challengeDays}-day challenge of your ${timelineText} plan? Reply "tomorrow", "Wednesday", "Friday", or type a relative date (e.g., "in 3 days" or a date like "YYYY-MM-DD").`;
+        }
+
+        await sendMessage(
+          chatId,
+          `👋 Hey ${dbUser.display_name}, this is Deylon.`
+        );
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        await sendMessage(chatId, promptMsg);
+      } else {
+        // No display name, ask for it
+        await supabase
+          .from('users')
+          .update({ 
+            telegram_chat_id: chatId,
+            telegram_linking_state: 'awaiting_greeting'
+          })
+          .eq('id', userId);
+
+        await sendMessage(
+          chatId,
+          '👋 Hey, this is Deylon.\n\nBefore we get started, what should I call you?'
+        );
+      }
     } else {
       const supabase = await createServiceClient();
 
@@ -139,15 +185,23 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', user.id);
 
+        const timezone = user.timezone || 'Africa/Lagos';
+        const userLocalTime = new Date(
+          new Date().toLocaleString('en-US', { timeZone: timezone })
+        );
+        const currentHour = userLocalTime.getHours();
+
+        let promptMsg = `When would you like to start your 21-day challenge? Reply "today", "tomorrow", or type a relative date (e.g., "in 3 days" or a date like "YYYY-MM-DD").`;
+        if (currentHour >= 21) {
+          promptMsg = `Since it's past 9 PM, when would you like to start your 21-day challenge? Reply "tomorrow" or type a relative date (e.g., "in 3 days" or a date like "YYYY-MM-DD").`;
+        }
+
         await sendMessage(
           chatId,
           `👋 Got it, I'll address you as "${cleanName}"!`
         );
         await new Promise((resolve) => setTimeout(resolve, 1500));
-        await sendMessage(
-          chatId,
-          `When would you like to start your 21-day challenge? Reply "today" or "tomorrow".`
-        );
+        await sendMessage(chatId, promptMsg);
         return NextResponse.json({ ok: true });
       }
 
@@ -155,10 +209,38 @@ export async function POST(request: NextRequest) {
       if (user.telegram_linking_state === 'awaiting_start_date') {
         const cleanText = text.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
         const timezone = user.timezone || 'Africa/Lagos';
+        const userLocalTime = new Date(
+          new Date().toLocaleString('en-US', { timeZone: timezone })
+        );
 
-        if (cleanText === 'today' || cleanText === 'tomorrow') {
-          const startDate = cleanText === 'today' ? getTodayISO(timezone) : getTomorrowISO(timezone);
+        let startDate = '';
+        if (cleanText === 'today') {
+          const currentHour = userLocalTime.getHours();
+          if (currentHour >= 21) {
+            await sendMessage(chatId, `⚠️ It's past 9 PM, so today is almost over. Please select "tomorrow" or another date.`);
+            return NextResponse.json({ ok: true });
+          }
+          startDate = getTodayISO(timezone);
+        } else if (cleanText === 'tomorrow') {
+          startDate = getTomorrowISO(timezone);
+        } else {
+          // Check for relative day offset e.g., "in 3 days", "3 days", "in 3 days time"
+          const relativeMatch = cleanText.match(/(?:in\s+)?(\d+)\s*days?/i);
+          if (relativeMatch) {
+            const daysOffset = parseInt(relativeMatch[1], 10);
+            const date = new Date(userLocalTime);
+            date.setDate(date.getDate() + daysOffset);
+            startDate = date.toISOString().split('T')[0];
+          } else {
+            // Check for YYYY-MM-DD
+            const dateMatch = cleanText.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (dateMatch) {
+              startDate = cleanText;
+            }
+          }
+        }
 
+        if (startDate) {
           // Fetch the user's latest plan
           const { data: plan, error: planErr } = await supabase
             .from('plans')
@@ -185,7 +267,7 @@ export async function POST(request: NextRequest) {
             .update({ telegram_linking_state: 'active' })
             .eq('id', user.id);
 
-          if (cleanText === 'today') {
+          if (startDate === getTodayISO(timezone)) {
             // Fetch today's card to deliver directly (since start date is today, today is day 1)
             const { data: todayCard } = await supabase
               .from('daily_cards')
@@ -195,7 +277,7 @@ export async function POST(request: NextRequest) {
               .eq('day_number', 1)
               .maybeSingle();
 
-            await sendMessage(chatId, `🚀 <b>Your challenge starts TODAY!</b>\n\nHere is your very first daily move:\n\n📌 <b>${todayCard?.task || 'No task assigned'}</b>\n\n⏱ <i>Duration: ${todayCard?.duration || '30 mins'}</i>\n\nYou've got this! Tell me: how much time did you spend on this today?`);
+            await sendMessage(chatId, `🚀 <b>Your challenge starts TODAY!</b>\n\nHere is your very first daily move:\n\n📌 <b>${formatTaskForTelegram(todayCard?.task || 'No task assigned')}</b>\n\n⏱ <i>Duration: ${todayCard?.duration || '30 mins'}</i>\n\nYou've got this! Let me know when you've finished it.`);
             
             // Mark card as revealed
             if (todayCard) {
@@ -205,10 +287,10 @@ export async function POST(request: NextRequest) {
                 .eq('id', todayCard.id);
             }
           } else {
-            await sendMessage(chatId, `🌅 <b>Your challenge will start tomorrow morning!</b>\n\nI'll deliver your first daily move tomorrow at 10 AM. Rest up and get ready!`);
+            await sendMessage(chatId, `🌅 <b>Your challenge is scheduled to start on ${startDate}!</b>\n\nI'll deliver your first daily move on that morning at 10 AM. Rest up and get ready!`);
           }
         } else {
-          await sendMessage(chatId, `Please reply with "today" or "tomorrow" to select your start date.`);
+          await sendMessage(chatId, `Please reply with "today", "tomorrow", or type a relative date (e.g., "in 3 days" or a date like "YYYY-MM-DD").`);
         }
         return NextResponse.json({ ok: true });
       }
