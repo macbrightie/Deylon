@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { sendMessage } from '@/lib/telegram/bot';
-import { formatUserGreeting } from '@/lib/telegram/message';
+import { formatUserGreeting, appendToConversationHistory } from '@/lib/telegram/message';
 import { getDayNumber, getTodayISO, getTomorrowISO } from '@/lib/utils/date';
 import { parseTasks, formatTaskForTelegram } from '@/lib/utils';
 
@@ -113,6 +113,7 @@ export async function GET(request: NextRequest) {
           const messageText = `🌅 <b>${greeting}</b>\n\nHere's a quick reminder of your daily move today:\n\n📌 <b>${formatTaskForTelegram(card.task)}</b>\n\n⏱ <i>${card.duration || '30 mins'}</i>\n\nYou've got this! Let's get it done today.${streakWarning}`;
 
           await sendMessage(user.telegram_chat_id!, messageText);
+          await appendToConversationHistory(supabase, user.id, 'assistant', messageText);
           sentCount++;
 
         } else if (currentHour === 16 || (force && forcedHour === 16)) {
@@ -149,6 +150,7 @@ export async function GET(request: NextRequest) {
             // Already completed
             const messageText = `🌟 <b>${greeting}</b>\n\nI saw you checked off all tasks for today! Spectacular progress. Enjoy your evening!`;
             await sendMessage(user.telegram_chat_id!, messageText);
+            await appendToConversationHistory(supabase, user.id, 'assistant', messageText);
           } else if (card.status === 'pending') {
             const taskItems = parseTasks(card.task);
             const tasksList = taskItems.map((item) => {
@@ -165,6 +167,7 @@ export async function GET(request: NextRequest) {
             const messageText = `👋 <b>${greeting}</b>\n\nHow's your move going today? Here's what's on your list:\n\n${tasksList}\n\nRemember to check them off on the dashboard once completed! Tell me: how much time did you spend on this today?`;
 
             await sendMessage(user.telegram_chat_id!, messageText);
+            await appendToConversationHistory(supabase, user.id, 'assistant', messageText);
           }
           sentCount++;
 
@@ -218,6 +221,7 @@ export async function GET(request: NextRequest) {
             if (nextDayNumber > 21) {
               const finishedMsg = `🎉 <b>${greeting}</b>\n\nYou have completed all daily cards for this sprint! Sensational job. Rest well.`;
               await sendMessage(user.telegram_chat_id!, finishedMsg);
+              await appendToConversationHistory(supabase, user.id, 'assistant', finishedMsg);
               return;
             }
 
@@ -242,6 +246,7 @@ export async function GET(request: NextRequest) {
             bubbles[0] = `✨ <b>${greeting}</b>\n\n${bubbles[0]}`;
 
             await sendSplitMessages(user.telegram_chat_id!, bubbles);
+            await appendToConversationHistory(supabase, user.id, 'assistant', bubbles.join('\n\n'));
 
             await supabase
               .from('daily_cards')
@@ -254,6 +259,7 @@ export async function GET(request: NextRequest) {
               // Offer carry-over
               const carryOverPrompt = `👀 <b>${greeting}</b>\n\nIt looks like today's task is still pending on your dashboard.\n\nWould you like to carry it over to tomorrow? (You can only do this once per week).\n\nReply with <b>"carry over"</b> to confirm, or <b>"no"</b> if you'll finish it tonight!`;
               await sendMessage(user.telegram_chat_id!, carryOverPrompt);
+              await appendToConversationHistory(supabase, user.id, 'assistant', carryOverPrompt);
             } else {
               // Cannot carry over. Warn and deliver tomorrow's task anyway.
               const cannotCarryMsg = `👀 <b>${greeting}</b>\n\nIt looks like today's task is still pending, and you've already used your weekly carry-over limit.\n\nTry to finish it tonight! Here is tomorrow's task to keep you prepared:`;
@@ -278,12 +284,17 @@ export async function GET(request: NextRequest) {
                     ];
                   }
                   await sendSplitMessages(user.telegram_chat_id!, bubbles);
+                  await appendToConversationHistory(supabase, user.id, 'assistant', `${cannotCarryMsg}\n\n${bubbles.join('\n\n')}`);
 
                   await supabase
                     .from('daily_cards')
                     .update({ revealed_at: new Date().toISOString() })
                     .eq('id', tomorrowCard.id);
+                } else {
+                  await appendToConversationHistory(supabase, user.id, 'assistant', cannotCarryMsg);
                 }
+              } else {
+                await appendToConversationHistory(supabase, user.id, 'assistant', cannotCarryMsg);
               }
             }
           }

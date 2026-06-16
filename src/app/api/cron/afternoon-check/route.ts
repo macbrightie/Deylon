@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { sendMessage } from '@/lib/telegram/bot';
-import { formatUserGreeting } from '@/lib/telegram/message';
+import { formatUserGreeting, appendToConversationHistory } from '@/lib/telegram/message';
 import { getDayNumber } from '@/lib/utils/date';
 import { parseTasks } from '@/lib/utils';
 
@@ -75,6 +75,7 @@ export async function GET(request: NextRequest) {
           // Already completed
           const messageText = `🌟 <b>${greeting}</b>\n\nI saw you checked off all tasks for today! Spectacular progress. Enjoy your evening!`;
           await sendMessage(user.telegram_chat_id!, messageText);
+          await appendToConversationHistory(supabase, user.id, 'assistant', messageText);
         } else if (card.status === 'pending') {
           const taskItems = parseTasks(card.task);
           const tasksList = taskItems.map((item) => {
@@ -91,6 +92,7 @@ export async function GET(request: NextRequest) {
           const messageText = `👋 <b>${greeting}</b>\n\nHow's your move going today? Here's what's on your list:\n\n${tasksList}\n\nRemember to check them off on the dashboard once completed! Tell me: how much time did you spend on this today?`;
 
           await sendMessage(user.telegram_chat_id!, messageText);
+          await appendToConversationHistory(supabase, user.id, 'assistant', messageText);
         }
         sentCount++;
       })

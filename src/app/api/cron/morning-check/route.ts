@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { sendMessage } from '@/lib/telegram/bot';
-import { formatUserGreeting } from '@/lib/telegram/message';
+import { formatUserGreeting, appendToConversationHistory } from '@/lib/telegram/message';
 import { getDayNumber } from '@/lib/utils/date';
 import { formatTaskForTelegram } from '@/lib/utils';
 
@@ -95,6 +95,7 @@ export async function GET(request: NextRequest) {
         const messageText = `🌅 <b>${greeting}</b>\n\nHere's a quick reminder of your daily move today:\n\n📌 <b>${formatTaskForTelegram(card.task)}</b>\n\n⏱ <i>${card.duration || '30 mins'}</i>\n\nYou've got this! Let's get it done today.${streakWarning}`;
 
         await sendMessage(user.telegram_chat_id!, messageText);
+        await appendToConversationHistory(supabase, user.id, 'assistant', messageText);
         sentCount++;
       })
     );

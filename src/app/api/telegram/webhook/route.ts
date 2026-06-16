@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { formatUserGreeting } from '@/lib/telegram/message';
+import { formatUserGreeting, appendToConversationHistory } from '@/lib/telegram/message';
 import { sendMessage } from '@/lib/telegram/bot';
 import { DailyChatService } from '@/lib/ai/services/daily-chat.service';
 import { MemoryService } from '@/lib/ai/services/memory.service';
@@ -312,8 +312,12 @@ export async function POST(request: NextRequest) {
               .eq('day_number', 1)
               .maybeSingle();
 
-            await sendMessage(chatId, `🚀 <b>Your challenge starts TODAY!</b>\n\nHere is your very first daily move:\n\n📌 <b>${formatTaskForTelegram(todayCard?.task || 'No task assigned')}</b>\n\n⏱ <i>Duration: ${todayCard?.duration || '30 mins'}</i>\n\nYou've got this! Let me know when you've finished it.`);
+            const messageText = `🚀 <b>Your challenge starts TODAY!</b>\n\nHere is your very first daily move:\n\n📌 <b>${formatTaskForTelegram(todayCard?.task || 'No task assigned')}</b>\n\n⏱ <i>Duration: ${todayCard?.duration || '30 mins'}</i>\n\nYou've got this! Let me know when you've finished it.`;
+            await sendMessage(chatId, messageText);
             
+            // Log delivery in conversation history
+            await appendToConversationHistory(supabase, user.id, 'assistant', messageText);
+
             // Mark card as revealed
             if (todayCard) {
               await supabase
