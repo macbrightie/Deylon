@@ -266,7 +266,7 @@ interface FlashCardProps {
   label?: string;
   onStatusChange?: (cardId: string, status: 'pending' | 'done' | 'adjusted' | 'partial', checkedStates: boolean[]) => Promise<void>;
   langKey?: string;
-  isLocked?: boolean;
+  lockedLabel?: string | null;
   isPaywallLocked?: boolean;
   onPaywallLockClick?: () => void;
 }
@@ -282,7 +282,7 @@ function FlashCard({
   label, 
   onStatusChange,
   langKey = 'English',
-  isLocked = false,
+  lockedLabel = null,
   isPaywallLocked = false,
   onPaywallLockClick
 }: FlashCardProps) {
@@ -349,7 +349,7 @@ function FlashCard({
   return (
     <div 
       onClick={handleCardClick}
-      className={`w-full max-w-[280px] flex-shrink-0 rounded-[16px] bg-[#f0ede6] relative overflow-hidden h-[430px] transition-all duration-500 shadow-sm border border-black/5 flex flex-col justify-between ${isLocked ? 'opacity-50 grayscale select-none' : ''} ${isPaywallLocked ? 'opacity-85 cursor-pointer hover:border-amber-500/35 hover:shadow-md' : ''}`}
+      className={`w-full max-w-[280px] flex-shrink-0 rounded-[16px] bg-[#f0ede6] relative overflow-hidden h-[430px] transition-all duration-500 shadow-sm border border-black/5 flex flex-col justify-between ${lockedLabel ? 'opacity-50 grayscale select-none' : ''} ${isPaywallLocked ? 'opacity-85 cursor-pointer hover:border-amber-500/35 hover:shadow-md' : ''}`}
     >
       
       {/* Front Face Content: 24px (p-6) padding all around */}
@@ -364,12 +364,12 @@ function FlashCard({
               Deylon Pro
             </div>
           )}
-          {!isPaywallLocked && isLocked && (
+          {!isPaywallLocked && lockedLabel && (
             <div className="self-start px-2.5 py-1 rounded-[6px] bg-red-500/10 border border-red-500/20 text-red-700 text-[10px] font-sans tracking-widest uppercase font-bold mb-2 select-none">
-              🔒 MISSED
+              {lockedLabel}
             </div>
           )}
-          {!isPaywallLocked && !isLocked && (dayNumber === 7 || dayNumber === 14 || dayNumber === 21) && (
+          {!isPaywallLocked && !lockedLabel && (dayNumber === 7 || dayNumber === 14 || dayNumber === 21) && (
             <div className="self-start px-2.5 py-1 rounded-[6px] bg-[#1a1a1a]/5 border border-[#1a1a1a]/10 text-[#a06f00] text-[9.5px] font-sans tracking-widest uppercase font-bold mb-2 select-none animate-pulse">
               🏆 Weekly Milestone
             </div>
@@ -382,7 +382,7 @@ function FlashCard({
           {/* Black Dot: 24x24px */}
           <button
             onClick={handleDotClick}
-            className={`w-6 h-6 rounded-full bg-[#1a1a1a] flex-shrink-0 transition-transform duration-300 relative z-20 flex items-center justify-center ${isLocked ? 'opacity-20 cursor-not-allowed' : 'cursor-pointer hover:scale-110 active:scale-95'}`}
+            className={`w-6 h-6 rounded-full bg-[#1a1a1a] flex-shrink-0 transition-transform duration-300 relative z-20 flex items-center justify-center ${lockedLabel ? 'opacity-20 cursor-not-allowed' : 'cursor-pointer hover:scale-110 active:scale-95'}`}
             aria-label="Reveal plan"
           >
             {isPaywallLocked && (
@@ -2551,7 +2551,11 @@ export default function DashboardPage() {
                   label={`Day ${dayNum} Move`}
                   onStatusChange={handleCardStatusChange}
                   langKey={langKey}
-                  isLocked={telegramLinkingState !== 'active' || (card?.status === 'pending' && dayNum < calendarDayNum - 1)}
+                  lockedLabel={
+                    telegramLinkingState !== 'active' 
+                      ? '⏸️ PAUSED' 
+                      : ((card?.status === 'pending' && dayNum < calendarDayNum - 1) ? '❌ MISSED' : null)
+                  }
                   isPaywallLocked={!isPro && dayNum >= 15}
                   onPaywallLockClick={() => {
                     posthog.capture('upgrade_plan_clicked', { source: `card_day_${dayNum}` });
