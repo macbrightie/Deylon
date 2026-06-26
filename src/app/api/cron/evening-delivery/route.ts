@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { sendMessage } from '@/lib/telegram/bot';
 import { formatUserGreeting, appendToConversationHistory } from '@/lib/telegram/message';
 import { getDayNumber } from '@/lib/utils/date';
+import { formatTaskForTelegram } from '@/lib/utils';
 
 async function sendSplitMessages(chatId: number, messages: string[]) {
   for (let i = 0; i < messages.length; i++) {
@@ -118,7 +119,7 @@ export async function GET(request: NextRequest) {
           if (!Array.isArray(bubbles) || bubbles.length === 0) {
             bubbles = [
               `🌅 <b>Tomorrow's Move — Day ${nextDayNumber}</b>`,
-              `📌 <b>Task:</b> ${tomorrowCard.task}\n\n⏱ <i>Duration: ${tomorrowCard.duration || '30 mins'}</i>`,
+              `📌 <b>Task:</b>\n${formatTaskForTelegram(tomorrowCard.task)}`,
             ];
           }
 
@@ -161,7 +162,7 @@ export async function GET(request: NextRequest) {
                 if (!Array.isArray(bubbles) || bubbles.length === 0) {
                   bubbles = [
                     `🌅 <b>Tomorrow's Move — Day ${nextDayNumber}</b>`,
-                    `📌 <b>Task:</b> ${tomorrowCard.task}\n\n⏱ <i>Duration: ${tomorrowCard.duration || '30 mins'}</i>`,
+                    `📌 <b>Task:</b>\n${formatTaskForTelegram(tomorrowCard.task)}`,
                   ];
                 }
                 await sendSplitMessages(user.telegram_chat_id!, bubbles);
