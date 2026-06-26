@@ -2480,7 +2480,7 @@ export default function DashboardPage() {
               {t('hey', langKey)} <span className="font-bold">{profileName}.</span>
             </h1>
             <p className="font-sans text-[20px] md:text-[24px] font-medium text-[#4e4e55] leading-relaxed mt-2 tracking-tight max-w-3xl">
-              You're building habits to help achieve {plan?.plan_data?.primary_goal ? plan.plan_data.primary_goal.toLowerCase() : 'your goals'}.
+              You're building habits to help you {plan?.plan_data?.primary_goal ? plan.plan_data.primary_goal.toLowerCase() : 'achieve your goals'}.
             </p>
           </div>
           <div className="flex items-center gap-3 mt-1 flex-shrink-0">
