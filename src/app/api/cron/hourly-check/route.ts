@@ -5,6 +5,16 @@ import { formatUserGreeting, appendToConversationHistory } from '@/lib/telegram/
 import { getDayNumber, getTodayISO, getTomorrowISO } from '@/lib/utils/date';
 import { parseTasks, formatTaskForTelegram } from '@/lib/utils';
 
+function extractStudyHint(taskText: string): string {
+  if (!taskText) return '';
+  const studyMatch = taskText.match(/Study:\s*([^.]+)/i);
+  if (studyMatch && studyMatch[1]) {
+    return studyMatch[1].trim();
+  }
+  const firstSentence = taskText.split('.')[0];
+  return firstSentence.replace(/Study:\s*/i, '').trim();
+}
+
 async function sendSplitMessages(chatId: number, messages: string[]) {
   for (let i = 0; i < messages.length; i++) {
     if (i > 0) {
@@ -235,12 +245,21 @@ export async function GET(request: NextRequest) {
 
             if (!tomorrowCard) return;
 
+            const studyHint = extractStudyHint(tomorrowCard.task);
+            const hintText = studyHint 
+              ? `\n\n<i>Tomorrow's focus: <b>${studyHint}</b>.</i>` 
+              : '';
+            const anticipateText = `${hintText}\n\n<i>I'll deliver the full details of your next move tomorrow morning at 10:00 AM. Get some rest!</i>`;
+
             let bubbles = (tomorrowCard.social_chat_messages as string[]) || [];
             if (!Array.isArray(bubbles) || bubbles.length === 0) {
               bubbles = [
                 `🌅 <b>Tomorrow's Move — Day ${nextDayNumber}</b>`,
-                `📌 <b>Task:</b>\n${formatTaskForTelegram(tomorrowCard.task)}\n\n⏱ <i>Duration: ${tomorrowCard.duration || '30 mins'}</i>`,
+                `📌 <b>Task:</b>\n${formatTaskForTelegram(tomorrowCard.task)}\n\n⏱ <i>Duration: ${tomorrowCard.duration || '30 mins'}</i>\n\n<i>I'll send a reminder tomorrow morning at 10:00 AM. Get some rest!</i>`,
               ];
+            } else {
+              bubbles = [...bubbles];
+              bubbles[bubbles.length - 1] = bubbles[bubbles.length - 1] + anticipateText;
             }
 
             bubbles[0] = `✨ <b>${greeting}</b>\n\n${bubbles[0]}`;
