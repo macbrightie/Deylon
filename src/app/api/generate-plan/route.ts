@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { PlannerService } from '@/lib/ai/services/planner.service';
 
+// Increase serverless execution timeout (up to 60 seconds) on Vercel Pro plans
+export const maxDuration = 60;
+
 function extractMonthsFromTimelineGoal(goalStr: string | undefined | null): number | null {
   if (!goalStr) return null;
   const clean = goalStr.toLowerCase().trim();
@@ -55,6 +58,21 @@ export async function POST(request: NextRequest) {
         { error: 'Conversation not found' },
         { status: 404 }
       );
+    }
+
+    // Check if a plan was already created after this conversation started (e.g. from a timed out but successful previous run)
+    const { data: existingPlan } = await supabase
+      .from('plans')
+      .select('id, plan_data')
+      .eq('user_id', user.id)
+      .gte('created_at', conversation.created_at)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingPlan) {
+      console.log('[generate-plan] Plan already exists for this onboarding session. Returning cached plan.');
+      return NextResponse.json({ planId: existingPlan.id, plan: existingPlan.plan_data });
     }
 
     const messages = conversation.messages;

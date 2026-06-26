@@ -101,16 +101,18 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: true });
       }
 
-      // Fetch active plan to get timelineGoal
+      // Fetch active plan to get timeline_months or timelineGoal
       const { data: activePlan } = await supabase
         .from('plans')
-        .select('plan_data')
+        .select('plan_data, timeline_months')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      const timelineText = (activePlan?.plan_data as any)?.timelineGoal || '3-month';
+      const timelineText = activePlan?.timeline_months
+        ? `${activePlan.timeline_months}-month`
+        : ((activePlan?.plan_data as any)?.timelineGoal || '3-month');
       const challengeDays = dbUser.is_pro ? 21 : 14;
 
       if (dbUser.display_name && dbUser.display_name.trim().length > 0) {
@@ -190,13 +192,15 @@ export async function POST(request: NextRequest) {
 
         const { data: activePlan } = await supabase
           .from('plans')
-          .select('plan_data')
+          .select('plan_data, timeline_months')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        const timelineText = (activePlan?.plan_data as any)?.timelineGoal || '3-month';
+        const timelineText = activePlan?.timeline_months
+          ? `${activePlan.timeline_months}-month`
+          : ((activePlan?.plan_data as any)?.timelineGoal || '3-month');
         const challengeDays = user.is_pro ? 21 : 14;
 
         const timezone = user.timezone || 'Africa/Lagos';
@@ -332,13 +336,15 @@ export async function POST(request: NextRequest) {
           // Fetch active plan to get timelineGoal for dynamic fallback message
           const { data: activePlan } = await supabase
             .from('plans')
-            .select('plan_data')
+            .select('plan_data, timeline_months')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
 
-          const timelineText = (activePlan?.plan_data as any)?.timelineGoal || '3-month';
+          const timelineText = activePlan?.timeline_months
+            ? `${activePlan.timeline_months}-month`
+            : ((activePlan?.plan_data as any)?.timelineGoal || '3-month');
           const challengeDays = user.is_pro ? 21 : 14;
 
           await sendMessage(chatId, `Please reply with "today", "tomorrow", "Wednesday", "Friday", or type a relative date (e.g., "in 3 days" or a date like "YYYY-MM-DD") to select the start date of your ${challengeDays}-day challenge of your ${timelineText} plan.`);
