@@ -316,7 +316,7 @@ export async function POST(request: NextRequest) {
               .eq('day_number', 1)
               .maybeSingle();
 
-            const messageText = `🚀 <b>Your challenge starts TODAY!</b>\n\nHere is your very first daily move:\n\n📌 <b>${formatTaskForTelegram(todayCard?.task || 'No task assigned')}</b>\n\n⏱ <i>Duration: ${todayCard?.duration || '30 mins'}</i>\n\nYou've got this! Let me know when you've finished it.`;
+            const messageText = `🚀 <b>Your challenge starts TODAY!</b>\n\nHere is your very first daily move:\n\n📌 <b>${formatTaskForTelegram(todayCard?.task || 'No task assigned')}</b>\n\nYou've got this! Let me know when you've finished it.`;
             await sendMessage(chatId, messageText);
             
             // Log delivery in conversation history
@@ -419,7 +419,7 @@ export async function POST(request: NextRequest) {
                   if (!Array.isArray(bubbles) || bubbles.length === 0) {
                     bubbles = [
                       `🌅 <b>Tomorrow's Move — Day ${nextDayNumber}</b>`,
-                      `📌 <b>Task:</b> ${newTomorrowTask}\n\n⏱ <i>Duration: ${tomorrowCard.duration || '30 mins'}</i>`,
+                      `📌 <b>Task:</b>\n${formatTaskForTelegram(newTomorrowTask)}`,
                     ];
                   }
                   bubbles[0] = `✨ <b>${greeting}</b>\n\n${bubbles[0]}`;
@@ -460,7 +460,7 @@ export async function POST(request: NextRequest) {
                 if (!Array.isArray(bubbles) || bubbles.length === 0) {
                   bubbles = [
                     `🌅 <b>Tomorrow's Move — Day ${nextDayNumber}</b>`,
-                    `📌 <b>Task:</b> ${tomorrowCard.task}\n\n⏱ <i>Duration: ${tomorrowCard.duration || '30 mins'}</i>`,
+                    `📌 <b>Task:</b>\n${formatTaskForTelegram(tomorrowCard.task)}`,
                   ];
                 }
                 bubbles[0] = `✨ <b>${greeting}</b>\n\n${bubbles[0]}`;

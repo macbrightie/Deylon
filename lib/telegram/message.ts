@@ -44,7 +44,6 @@ export function buildDailyReminder(data: DailyReminderData): string {
     `📌 <b>Today's task:</b>`,
     `${data.task}`,
     ``,
-    `⏱ <i>${data.duration}</i>`,
     `🎯 <i>Towards: ${data.chainToGoal}</i>`,
     ``,
     `<a href="${data.appUrl}/dashboard">→ Open Deylon dashboard</a>`,

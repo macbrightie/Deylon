@@ -38,6 +38,6 @@ export function parseTasks(taskText: string): TaskItem[] {
 export function formatTaskForTelegram(taskText: string): string {
   if (!taskText) return '';
   return taskText
-    .replace(/\s*Daily Reps:/g, '\nDaily Reps:')
-    .replace(/\s*Strategy:/g, '\nStrategy:');
+    .replace(/\s*Daily Reps:/g, '\n\nDaily Reps:')
+    .replace(/\s*Strategy:/g, '\n\nStrategy:');
 }
