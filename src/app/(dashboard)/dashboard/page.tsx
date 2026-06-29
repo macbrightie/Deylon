@@ -1675,22 +1675,26 @@ function SettingsModal({
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0 shadow-sm">
                     <path d="M12.002 2C17.5248 2 22.002 6.47715 22.002 12C22.002 17.5228 17.5248 22 12.002 22C10.1681 22 8.44948 21.5064 6.97183 20.6447L2.00613 22L3.35809 17.0315C2.49591 15.5536 2.00195 13.8345 2.00195 12C2.00195 6.47715 6.4791 2 12.002 2ZM8.39329 7.30833C8.2639 7.31742 8.13704 7.34902 8.02154 7.40811C7.93489 7.45244 7.85445 7.51651 7.72806 7.63586C7.60871 7.74855 7.53954 7.84697 7.46666 7.94186C7.09696 8.4232 6.89826 9.01405 6.90195 9.62098C6.90396 10.1116 7.0314 10.5884 7.23266 11.0336C7.64079 11.9364 8.31385 12.8908 9.20291 13.7759C9.41647 13.9885 9.6257 14.2034 9.85131 14.402C10.9548 15.3736 12.2698 16.0742 13.6917 16.4482C13.6917 16.4482 14.2517 16.5342 14.2599 16.5347C14.4454 16.5447 14.6306 16.5313 14.8163 16.5218C15.1076 16.5068 15.392 16.428 15.6494 16.2909C15.8149 16.2028 15.8932 16.159 16.0321 16.0714C16.0321 16.0714 16.0747 16.0426 16.1569 15.9814C16.2919 15.8808 16.3753 15.81 16.4876 15.6934C16.5704 15.6074 16.6416 15.5058 16.6966 15.3913C16.7748 15.2281 16.8535 14.9166 16.8848 14.6579C16.9087 14.4603 16.9015 14.3523 16.8989 14.2854C16.8946 14.1778 16.8057 14.0671 16.7083 14.0201L16.1268 13.7587C16.1268 13.7587 15.2573 13.3803 14.7255 13.1377C14.6701 13.1124 14.6095 13.1007 14.5486 13.097C14.4152 13.0888 14.2657 13.1236 14.1706 13.2238C14.1656 13.2218 14.0994 13.279 13.3759 14.1555C13.336 14.2032 13.2425 14.3069 13.0808 14.2972C13.0564 14.2955 13.0321 14.292 13.0084 14.2858C12.9429 14.2685 12.8791 14.2457 12.8167 14.2193C12.693 14.1668 12.6496 14.1669 12.5651 14.1105C11.9878 13.8583 11.458 13.5209 10.9897 13.108C10.8641 12.9974 10.7473 12.8783 10.6269 12.7616C10.2067 12.3543 9.86266 11.9211 9.60674 11.4938C9.59277 11.4705 9.57124 11.4368 9.54805 11.3991C9.50618 11.331 9.46 11.25 9.44552 11.1944C9.40835 11.0473 9.50696 10.9291 9.50696 10.9291C9.50696 10.9291 9.75036 10.663 9.86345 10.5183C9.97225 10.379 10.0662 10.2428 10.126 10.1457C10.2438 9.95633 10.2811 9.76062 10.2192 9.60963C9.93861 8.92565 9.64915 8.24536 9.35083 7.56894C9.29195 7.43545 9.11682 7.33846 8.95756 7.32007C8.90362 7.31384 8.84972 7.30758 8.79556 7.30402C8.6615 7.29748 8.52717 7.29892 8.39329 7.30833Z" fill="white"/>
                   </svg>
-                  <span className="font-sans font-medium text-[14px]">
-                    {t('connect_whatsapp', langKey)}
-                  </span>
+                  <div className="flex flex-col text-left">
+                    <span className="font-sans font-medium text-[14px]">
+                      Connect WhatsApp
+                    </span>
+                    <span className="font-sans text-[11px] text-white/50 mt-0.5">
+                      7-day trial
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[12px] font-sans font-bold uppercase tracking-wider bg-[#1559EF] text-white rounded-full select-none shadow-sm animate-pulse">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-white flex-shrink-0">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                    </svg>
-                    Upgrade
-                  </span>
-                  {whatsappConnected && (
+                  {whatsappConnected ? (
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-[12px] font-sans font-medium">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#3CD070] shadow-glow" />
                       {t('connected', langKey)}
                     </div>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-40">
+                      <path d="M5 12h14"></path>
+                      <path d="M12 5l7 7-7 7"></path>
+                    </svg>
                   )}
                 </div>
               </div>
@@ -1814,6 +1818,71 @@ function TelegramConnectModal({ isOpen, onClose, onConnect }: TelegramConnectMod
 
 
 
+
+// ─── WhatsApp Connect Modal ───────────────────────────────────────────────────
+function WhatsAppConnectModal({
+  isOpen,
+  onClose,
+  onSaveAndVerify
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSaveAndVerify: (phone: string) => Promise<void>;
+}) {
+  const [phone, setPhone] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) setPhone('');
+  }, [isOpen]);
+
+  const handleSave = async () => {
+    if (!phone.trim()) return;
+    setIsSaving(true);
+    await onSaveAndVerify(phone.trim());
+    setIsSaving(false);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-[420px] bg-[#1a1a1a] text-white border-white/10 rounded-[20px] p-8">
+        <DialogHeader>
+          <DialogTitle className="text-[22px] font-sans font-medium text-white mb-2">
+            Start 7-Day WhatsApp Trial
+          </DialogTitle>
+          <DialogDescription className="text-[14px] text-white/60 font-sans leading-relaxed">
+            Enter your WhatsApp number with the country code (e.g. +13203732683). You'll be redirected to WhatsApp to send a quick verification message.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-col gap-4 mt-6">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="whatsappPhone" className="text-white/80 font-sans text-[13px]">WhatsApp Number</Label>
+            <input
+              id="whatsappPhone"
+              type="tel"
+              placeholder="+1234567890"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="w-full bg-[#2A2A2E] border border-white/10 text-white rounded-[12px] px-4 py-3 font-sans text-[15px] outline-none focus:border-white/30 transition-colors"
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="mt-8 sm:justify-start">
+          <Button 
+            onClick={handleSave}
+            disabled={isSaving || !phone.trim()}
+            className="w-full bg-white text-[#1a1a1a] hover:bg-white/90 rounded-[12px] py-6 text-[15px] font-medium transition-all cursor-pointer"
+          >
+            {isSaving ? 'Connecting...' : 'Save & Verify'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [onboardingConvId, setOnboardingConvId] = useState<string | null>(null);
@@ -1840,6 +1909,7 @@ export default function DashboardPage() {
   // Dynamic Modals States
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+
   const [settingsDefaultTab, setSettingsDefaultTab] = useState<'general' | 'privacy'>('general');
   const [showGoalsDrawer, setShowGoalsDrawer] = useState(false);
   const [showAdjustModal, setShowAdjustModal] = useState(false);
@@ -1858,6 +1928,7 @@ export default function DashboardPage() {
   const [telegramConnected, setTelegramConnected] = useState(false);
   const [telegramLinkingState, setTelegramLinkingState] = useState<string | null>(null);
   const [whatsappConnected, setWhatsappConnected] = useState(false);
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [activeLanguage, setActiveLanguage] = useState('Auto-detect');
   const [habitFilter, setHabitFilter] = useState<'overall' | 'habit'>('overall');
   const [pendingCompletion, setPendingCompletion] = useState<{cardId: string, checkedStates: boolean[]} | null>(null);
@@ -2318,6 +2389,41 @@ export default function DashboardPage() {
     }
   };
 
+  const handleToggleWhatsApp = () => {
+    if (whatsappConnected) {
+      // Logic to disconnect could go here if needed
+    } else {
+      setIsWhatsAppModalOpen(true);
+      setShowSettingsModal(false); // Close settings modal so WhatsApp modal can show cleanly
+    }
+  };
+
+  const handleSaveWhatsApp = async (phone: string) => {
+    if (!user) return;
+    
+    // 1. Update Supabase
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('users')
+      .update({ whatsapp_number: phone })
+      .eq('id', user.id);
+
+    if (error) {
+      console.error('Error saving whatsapp number:', error);
+      return;
+    }
+
+    setWhatsappConnected(true);
+    setIsWhatsAppModalOpen(false);
+
+    // 2. Redirect to wa.me with the join code
+    const twilioNumber = process.env.NEXT_PUBLIC_TWILIO_PHONE_NUMBER || '+13203732683';
+    const joinCode = process.env.NEXT_PUBLIC_TWILIO_JOIN_CODE || 'join purple-monkey'; 
+    const waUrl = `https://wa.me/${twilioNumber.replace('+', '')}?text=${encodeURIComponent(joinCode)}`;
+    
+    window.open(waUrl, '_blank');
+  };
+
   const handleToggleTelegram = () => {
     if (telegramConnected) {
       alert("Your Telegram account is connected to Deylon!");
@@ -2453,7 +2559,12 @@ export default function DashboardPage() {
           onSave={handleSaveProfile}
         />
 
-        <SettingsModal 
+        <WhatsAppConnectModal
+        isOpen={isWhatsAppModalOpen}
+        onClose={() => setIsWhatsAppModalOpen(false)}
+        onSaveAndVerify={handleSaveWhatsApp}
+      />
+      <SettingsModal 
           isOpen={showSettingsModal}
           onClose={() => setShowSettingsModal(false)}
           defaultTab={settingsDefaultTab}
@@ -2461,7 +2572,7 @@ export default function DashboardPage() {
           onToggleTelegram={handleToggleTelegram}
           onDisconnectTelegram={handleDisconnectTelegram}
           whatsappConnected={whatsappConnected}
-          onToggleWhatsApp={() => setWhatsappConnected(!whatsappConnected)}
+          onToggleWhatsApp={handleToggleWhatsApp}
           activeLanguage={activeLanguage}
           onChangeLanguage={(lang) => setActiveLanguage(lang)}
           onExportData={handleExportData}
@@ -2706,7 +2817,7 @@ export default function DashboardPage() {
         onToggleTelegram={handleToggleTelegram}
         onDisconnectTelegram={handleDisconnectTelegram}
         whatsappConnected={whatsappConnected}
-        onToggleWhatsApp={() => setWhatsappConnected(!whatsappConnected)}
+        onToggleWhatsApp={handleToggleWhatsApp}
         activeLanguage={activeLanguage}
         onChangeLanguage={(lang) => setActiveLanguage(lang)}
         onExportData={handleExportData}
