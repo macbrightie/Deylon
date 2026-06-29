@@ -669,9 +669,21 @@ export async function POST(request: NextRequest) {
         // Call daily coaching chat service
         const reply = await DailyChatService.chat(supabase, user.id, conversation.id, sprintDay);
 
+        // Check for the new explicit hidden completion sync token (e.g. [TASK_DONE: X])
+        let syncedDayNumber: number | null = null;
+        let cleanReply = reply;
+        const taskDoneMatch = reply.match(/\[TASK_DONE:\s*(\d+)\]/i);
+
+        if (taskDoneMatch) {
+          syncedDayNumber = parseInt(taskDoneMatch[1], 10);
+          cleanReply = reply.replace(/\[TASK_DONE:\s*\d+\]/gi, '').trim();
+          console.log('[Telegram Webhook] Found explicit task completion sync token for day:', syncedDayNumber);
+        }
+
         // Check if LLM response indicates task completion verification
         const lowerReply = reply.toLowerCase();
-        const shouldMarkDone = lowerReply.includes('task checked 100%') || 
+        const shouldMarkDone = !!taskDoneMatch ||
+                               lowerReply.includes('task checked 100%') || 
                                lowerReply.includes('task checked') ||
                                lowerReply.includes("marked today's move as done") ||
                                lowerReply.includes("marked today's moves as done") ||
@@ -681,18 +693,19 @@ export async function POST(request: NextRequest) {
                                lowerReply.includes("marked today's task as completed");
 
         if (shouldMarkDone) {
-          console.log('[Telegram Webhook] LLM reply indicates task completion. Syncing DB for dayNumber:', sprintDay);
-          // Fetch today's card
-          const { data: todayCard } = await supabase
+          const targetDay = syncedDayNumber || sprintDay;
+          console.log('[Telegram Webhook] Syncing DB completion status for dayNumber:', targetDay);
+          // Fetch target card
+          const { data: targetCard } = await supabase
             .from('daily_cards')
             .select('*')
             .eq('user_id', user.id)
             .eq('plan_id', plan.id)
-            .eq('day_number', sprintDay)
+            .eq('day_number', targetDay)
             .maybeSingle();
 
-          if (todayCard && todayCard.status !== 'done') {
-            const taskItems = parseTasks(todayCard.task);
+          if (targetCard && targetCard.status !== 'done') {
+            const taskItems = parseTasks(targetCard.task);
             const checkedStates = Array(taskItems.length).fill(true);
 
             const { error: updateErr } = await supabase
@@ -702,12 +715,12 @@ export async function POST(request: NextRequest) {
                 completed_at: new Date().toISOString(),
                 checked_states: checkedStates
               })
-              .eq('id', todayCard.id);
+              .eq('id', targetCard.id);
 
             if (updateErr) {
               console.error('[Telegram Webhook] Failed to auto-mark task as done from LLM reply:', updateErr);
             } else {
-              console.log('[Telegram Webhook] Successfully marked task as done in DB from LLM reply.');
+              console.log('[Telegram Webhook] Successfully marked task as done in DB from LLM reply for day:', targetDay);
             }
           }
         }
@@ -715,7 +728,7 @@ export async function POST(request: NextRequest) {
         // Save Deylon's reply to the database
         const finalMessages = [
           ...updatedMessages,
-          { role: 'assistant', content: reply }
+          { role: 'assistant', content: cleanReply }
         ];
 
         await supabase
@@ -724,7 +737,7 @@ export async function POST(request: NextRequest) {
           .eq('id', conversation.id);
 
         // Send Deylon's response to the user via Telegram split into bubbles
-        await sendBubbleReply(chatId, reply);
+        await sendBubbleReply(chatId, cleanReply);
 
         // Run background processes concurrently
         try {
