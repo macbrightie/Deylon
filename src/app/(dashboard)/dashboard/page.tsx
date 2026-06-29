@@ -1603,6 +1603,7 @@ function SettingsModal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="p-0 max-w-[760px] w-[92vw] md:w-full h-[85vh] md:h-[520px] overflow-hidden flex flex-row rounded-[24px]">
+        <DialogTitle className="sr-only">Settings</DialogTitle>
         <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as any)} className="flex flex-row w-full h-full">
           {/* Left Sidebar Pane - Hidden on Mobile */}
           <div className="hidden md:flex w-[192px] bg-[#ECE8E2] pt-20 pb-6 pl-6 pr-4 flex-col justify-between border-r border-black/5">
@@ -2389,12 +2390,17 @@ export default function DashboardPage() {
     }
   };
 
+  
+  
   const handleToggleWhatsApp = () => {
     if (whatsappConnected) {
       // Logic to disconnect could go here if needed
     } else {
-      setIsWhatsAppModalOpen(true);
-      setShowSettingsModal(false); // Close settings modal so WhatsApp modal can show cleanly
+      setShowSettingsModal(false); // Close settings modal
+      // Use setTimeout to allow Radix UI to unmount first dialog before opening the second
+      setTimeout(() => {
+        setIsWhatsAppModalOpen(true);
+      }, 150);
     }
   };
 
@@ -2424,7 +2430,7 @@ export default function DashboardPage() {
     window.open(waUrl, '_blank');
   };
 
-  const handleToggleTelegram = () => {
+const handleToggleTelegram = () => {
     if (telegramConnected) {
       alert("Your Telegram account is connected to Deylon!");
       return;
