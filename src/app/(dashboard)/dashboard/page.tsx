@@ -1559,6 +1559,7 @@ interface SettingsModalProps {
   onDisconnectTelegram: () => void;
   whatsappConnected: boolean;
   onToggleWhatsApp: () => void;
+  onSaveWhatsApp?: (phone: string) => Promise<void>;
   activeLanguage: string;
   onChangeLanguage: (lang: string) => void;
   onExportData: () => Promise<void>;
@@ -1574,6 +1575,7 @@ function SettingsModal({
   onDisconnectTelegram,
   whatsappConnected,
   onToggleWhatsApp,
+  onSaveWhatsApp,
   activeLanguage,
   onChangeLanguage,
   onExportData,
@@ -1581,10 +1583,16 @@ function SettingsModal({
 }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<'general'>('general');
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
+  const [view, setView] = useState<'main' | 'whatsapp'>('main');
+  const [phone, setPhone] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setActiveTab('general');
+      setView('main');
+      setPhone('');
+      setIsSaving(false);
     }
   }, [isOpen]);
 
@@ -1619,8 +1627,54 @@ function SettingsModal({
           </div>
 
           {/* Right Content Pane */}
-          <div className="flex-1 pt-16 md:pt-8 pb-6 px-6 md:px-8 flex flex-col overflow-y-auto w-full h-full">
-            <TabsContent value="general" className="flex flex-col h-full m-0 outline-none w-full">
+          <div className="flex-1 pt-16 md:pt-8 pb-6 px-6 md:px-8 flex flex-col overflow-y-auto w-full h-full relative overflow-x-hidden">
+            {view === 'whatsapp' ? (
+              <div className="flex flex-col h-full w-full animate-in fade-in slide-in-from-right-4 duration-300">
+                <button 
+                  onClick={() => setView('main')}
+                  className="flex items-center gap-2 text-[#1a1a1a]/60 hover:text-[#1a1a1a] transition-colors mb-6 text-sm font-sans font-medium text-left w-fit"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 12H5"></path>
+                    <path d="M12 19l-7-7 7-7"></path>
+                  </svg>
+                  Back
+                </button>
+                <h4 className="font-sans font-medium text-[20px] text-[#1a1a1a] tracking-tight select-none mb-2 text-left">
+                  Start 7-Day WhatsApp Trial
+                </h4>
+                <p className="text-[14px] text-[#1a1a1a]/60 font-sans leading-relaxed mb-6 text-left">
+                  Enter your WhatsApp number with the country code (e.g. +13203732683). You'll be redirected to WhatsApp to send a quick verification message.
+                </p>
+                
+                <div className="flex flex-col gap-2 flex-1">
+                  <Label htmlFor="whatsappPhone" className="text-[#1a1a1a]/80 font-sans text-[13px] text-left">WhatsApp Number</Label>
+                  <input
+                    id="whatsappPhone"
+                    type="tel"
+                    placeholder="+1234567890"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full bg-[#ECE8E2]/50 border border-black/10 text-[#1a1a1a] rounded-[12px] px-4 py-3 font-sans text-[15px] outline-none focus:border-black/30 transition-colors"
+                  />
+                </div>
+
+                <Button 
+                  onClick={async () => {
+                    if (!phone.trim()) return;
+                    setIsSaving(true);
+                    if (onSaveWhatsApp) await onSaveWhatsApp(phone.trim());
+                    setIsSaving(false);
+                    onClose();
+                  }}
+                  disabled={isSaving || !phone.trim()}
+                  className="w-full bg-[#1a1a1a] text-white hover:bg-[#1a1a1a]/90 rounded-[12px] py-6 text-[15px] font-medium transition-all mt-auto"
+                >
+                  {isSaving ? 'Connecting...' : 'Save & Verify'}
+                </Button>
+              </div>
+            ) : (
+            <TabsContent value="general" className="flex flex-col h-full m-0 outline-none w-full animate-in fade-in slide-in-from-left-4 duration-300">
               <h4 className="font-sans font-medium text-[20px] text-[#1a1a1a] tracking-tight select-none mb-4 text-left">
                 {t('general_settings', langKey)}
               </h4>
@@ -1669,7 +1723,7 @@ function SettingsModal({
 
               {/* WhatsApp Bar with Premium Upgrade Crown/Star Icon */}
               <div 
-                onClick={onToggleWhatsApp}
+                onClick={() => setView('whatsapp')}
                 className="mt-3 flex items-center justify-between bg-[#1E1E22] hover:bg-[#2A2A2E] text-white pt-4 pb-4 px-4 rounded-[16px] cursor-pointer transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] shadow-sm select-none"
               >
                 <div className="flex items-center gap-3.5">
@@ -1757,6 +1811,7 @@ function SettingsModal({
                 </div>
               </div>
             </TabsContent>
+            )}
           </div>
         </Tabs>
       </DialogContent>
@@ -1820,69 +1875,7 @@ function TelegramConnectModal({ isOpen, onClose, onConnect }: TelegramConnectMod
 
 
 
-// ─── WhatsApp Connect Modal ───────────────────────────────────────────────────
-function WhatsAppConnectModal({
-  isOpen,
-  onClose,
-  onSaveAndVerify
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onSaveAndVerify: (phone: string) => Promise<void>;
-}) {
-  const [phone, setPhone] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    if (isOpen) setPhone('');
-  }, [isOpen]);
-
-  const handleSave = async () => {
-    if (!phone.trim()) return;
-    setIsSaving(true);
-    await onSaveAndVerify(phone.trim());
-    setIsSaving(false);
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[420px] bg-[#1a1a1a] text-white border-white/10 rounded-[20px] p-8">
-        <DialogHeader>
-          <DialogTitle className="text-[22px] font-sans font-medium text-white mb-2">
-            Start 7-Day WhatsApp Trial
-          </DialogTitle>
-          <DialogDescription className="text-[14px] text-white/60 font-sans leading-relaxed">
-            Enter your WhatsApp number with the country code (e.g. +13203732683). You'll be redirected to WhatsApp to send a quick verification message.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex flex-col gap-4 mt-6">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="whatsappPhone" className="text-white/80 font-sans text-[13px]">WhatsApp Number</Label>
-            <input
-              id="whatsappPhone"
-              type="tel"
-              placeholder="+1234567890"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full bg-[#2A2A2E] border border-white/10 text-white rounded-[12px] px-4 py-3 font-sans text-[15px] outline-none focus:border-white/30 transition-colors"
-            />
-          </div>
-        </div>
-
-        <DialogFooter className="mt-8 sm:justify-start">
-          <Button 
-            onClick={handleSave}
-            disabled={isSaving || !phone.trim()}
-            className="w-full bg-white text-[#1a1a1a] hover:bg-white/90 rounded-[12px] py-6 text-[15px] font-medium transition-all cursor-pointer"
-          >
-            {isSaving ? 'Connecting...' : 'Save & Verify'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -1929,7 +1922,6 @@ export default function DashboardPage() {
   const [telegramConnected, setTelegramConnected] = useState(false);
   const [telegramLinkingState, setTelegramLinkingState] = useState<string | null>(null);
   const [whatsappConnected, setWhatsappConnected] = useState(false);
-  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [activeLanguage, setActiveLanguage] = useState('Auto-detect');
   const [habitFilter, setHabitFilter] = useState<'overall' | 'habit'>('overall');
   const [pendingCompletion, setPendingCompletion] = useState<{cardId: string, checkedStates: boolean[]} | null>(null);
@@ -2396,7 +2388,7 @@ export default function DashboardPage() {
     if (whatsappConnected) {
       // Logic to disconnect could go here if needed
     } else {
-      setIsWhatsAppModalOpen(true);
+      // Handled internally by SettingsModal now
     }
   };
 
@@ -2416,7 +2408,6 @@ export default function DashboardPage() {
     }
 
     setWhatsappConnected(true);
-    setIsWhatsAppModalOpen(false);
 
     // 2. Redirect to wa.me with the join code
     const twilioNumber = process.env.NEXT_PUBLIC_TWILIO_PHONE_NUMBER || '+13203732683';
@@ -2570,16 +2561,11 @@ const handleToggleTelegram = () => {
           onDisconnectTelegram={handleDisconnectTelegram}
           whatsappConnected={whatsappConnected}
           onToggleWhatsApp={handleToggleWhatsApp}
+          onSaveWhatsApp={handleSaveWhatsApp}
           activeLanguage={activeLanguage}
           onChangeLanguage={(lang) => setActiveLanguage(lang)}
           onExportData={handleExportData}
           onResetAccount={handleResetAccount}
-      />
-
-      <WhatsAppConnectModal
-        isOpen={isWhatsAppModalOpen}
-        onClose={() => setIsWhatsAppModalOpen(false)}
-        onSaveAndVerify={handleSaveWhatsApp}
       />
 
         <PrivacyModal 
