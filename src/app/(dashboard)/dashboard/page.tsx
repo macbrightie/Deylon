@@ -2396,11 +2396,7 @@ export default function DashboardPage() {
     if (whatsappConnected) {
       // Logic to disconnect could go here if needed
     } else {
-      setShowSettingsModal(false); // Close settings modal
-      // Use setTimeout to allow Radix UI to unmount first dialog before opening the second
-      setTimeout(() => {
-        setIsWhatsAppModalOpen(true);
-      }, 150);
+      setIsWhatsAppModalOpen(true);
     }
   };
 
@@ -2565,11 +2561,6 @@ const handleToggleTelegram = () => {
           onSave={handleSaveProfile}
         />
 
-        <WhatsAppConnectModal
-        isOpen={isWhatsAppModalOpen}
-        onClose={() => setIsWhatsAppModalOpen(false)}
-        onSaveAndVerify={handleSaveWhatsApp}
-      />
       <SettingsModal 
           isOpen={showSettingsModal}
           onClose={() => setShowSettingsModal(false)}
@@ -2583,7 +2574,13 @@ const handleToggleTelegram = () => {
           onChangeLanguage={(lang) => setActiveLanguage(lang)}
           onExportData={handleExportData}
           onResetAccount={handleResetAccount}
-        />
+      />
+
+      <WhatsAppConnectModal
+        isOpen={isWhatsAppModalOpen}
+        onClose={() => setIsWhatsAppModalOpen(false)}
+        onSaveAndVerify={handleSaveWhatsApp}
+      />
 
         <PrivacyModal 
           isOpen={showPrivacyModal}
