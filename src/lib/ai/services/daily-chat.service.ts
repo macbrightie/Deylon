@@ -87,19 +87,21 @@ export class DailyChatService {
 
     const weeklyMovesCompleted = recentCards?.filter((c) => c.status === 'done' || c.status === 'partial').length || 0;
 
-    // Current streak (consecutive 'done' or 'grace' statuses in sprint_progress)
-    const { data: progressList } = await supabase
-      .from('sprint_progress')
-      .select('*')
+    // Current streak (consecutive 'done' statuses in daily_cards)
+    const { data: streakCards } = await supabase
+      .from('daily_cards')
+      .select('day_number, status')
       .eq('user_id', userId)
+      .lte('day_number', sprintDay)
       .order('day_number', { ascending: false });
 
     let streakCurrent = 0;
-    if (progressList) {
-      for (const day of progressList) {
-        if (day.status === 'done' || day.status === 'grace') {
+    if (streakCards) {
+      for (const card of streakCards) {
+        if (card.status === 'done') {
           streakCurrent++;
-        } else {
+        } else if (card.status === 'pending' && card.day_number < sprintDay - 1) {
+          // Streak broken by a missed past day (48-hour grace period)
           break;
         }
       }
@@ -208,19 +210,21 @@ export class DailyChatService {
     // 4. Sentiment of last 3 chats
     const conversationSentimentLast3 = 'neutral';
 
-    // 5. Streak current
-    const { data: progressList } = await supabase
-      .from('sprint_progress')
-      .select('status')
+    // 5. Streak current (consecutive 'done' statuses in daily_cards)
+    const { data: streakCards } = await supabase
+      .from('daily_cards')
+      .select('day_number, status')
       .eq('user_id', userId)
+      .lte('day_number', sprintDay)
       .order('day_number', { ascending: false });
 
     let streakCurrent = 0;
-    if (progressList) {
-      for (const day of progressList) {
-        if (day.status === 'done' || day.status === 'grace') {
+    if (streakCards) {
+      for (const card of streakCards) {
+        if (card.status === 'done') {
           streakCurrent++;
-        } else {
+        } else if (card.status === 'pending' && card.day_number < sprintDay - 1) {
+          // Streak broken by a missed past day (48-hour grace period)
           break;
         }
       }

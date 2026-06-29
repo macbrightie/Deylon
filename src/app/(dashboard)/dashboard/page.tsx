@@ -587,13 +587,15 @@ function HabitGrid({
   filter, 
   onFilterChange,
   habits = [],
-  langKey = 'English'
+  langKey = 'English',
+  startDate
 }: { 
   dailyCards: any[]; 
   filter: 'overall' | 'habit'; 
   onFilterChange: (f: 'overall' | 'habit') => void;
   habits?: any[];
   langKey?: string;
+  startDate?: string | null;
 }) {
   const [currentMonth, setCurrentMonth] = useState<number>(5); // default to June (5)
   const [isOpen, setIsOpen] = useState(false);
@@ -638,6 +640,19 @@ function HabitGrid({
     { name: months[10], col: 43 },
     { name: months[11], col: 47 }
   ];
+
+  const startDayOfWeek = startDate ? (() => {
+    const parts = startDate.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const d = new Date(year, month, day);
+      const dayOfWeek = d.getDay();
+      return dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    }
+    return 0;
+  })() : 0;
 
   return (
     <div className="bg-[#1a1a1a] rounded-[20px] px-6 pb-[24px] pt-[32px] flex flex-col gap-6 min-h-[520px] h-auto justify-between text-left">
@@ -717,10 +732,10 @@ function HabitGrid({
             {DAYS.map((day, di) => (
               <div key={day} className="flex gap-[6px]">
                 {Array.from({ length: 52 }).map((_, ci) => {
-                  const dayNum = ci * 7 + di + 1;
+                  const dayNum = (ci * 7 + di) - startDayOfWeek + 1;
                   
                   let bgColor = 'rgba(255,255,255,0.04)';
-                  if (dayNum <= 21) {
+                  if (dayNum >= 1 && dayNum <= 21) {
                     const card = dailyCards.find((c) => c.day_number === dayNum);
                     if (card) {
                       if (filter === 'overall') {
@@ -741,13 +756,13 @@ function HabitGrid({
                         if (selectedHabitIndex === null) {
                           active = false;
                         } else if (selectedHabitIndex === 0) {
-                          active = dayNum <= 21 && (dayNum % 7 !== 0);
+                          active = dayNum >= 1 && dayNum <= 21 && (dayNum % 7 !== 0);
                         } else if (selectedHabitIndex === 1) {
-                          active = dayNum <= 21 && (dayNum % 7 === 2 || dayNum % 7 === 5);
+                          active = dayNum >= 1 && dayNum <= 21 && (dayNum % 7 === 2 || dayNum % 7 === 5);
                         } else if (selectedHabitIndex === 2) {
-                          active = dayNum <= 21 && (dayNum % 7 === 1 || dayNum % 7 === 3 || dayNum % 7 === 6);
+                          active = dayNum >= 1 && dayNum <= 21 && (dayNum % 7 === 1 || dayNum % 7 === 3 || dayNum % 7 === 6);
                         } else {
-                          active = dayNum <= 21 && (dayNum % 2 !== 0);
+                          active = dayNum >= 1 && dayNum <= 21 && (dayNum % 2 !== 0);
                         }
                         bgColor = active ? '#104D3B' : 'rgba(255,255,255,0.15)';
                       }
@@ -760,9 +775,9 @@ function HabitGrid({
                     <div
                       key={ci}
                       className={`w-[32px] h-[32px] rounded-[6px] flex-shrink-0 transition-colors ${
-                        dayNum <= 21 ? 'cursor-pointer hover:ring-1 hover:ring-white/20' : ''
+                        dayNum >= 1 && dayNum <= 21 ? 'cursor-pointer hover:ring-1 hover:ring-white/20' : ''
                       }`}
-                      title={dayNum <= 21 ? `Day ${dayNum} Move` : undefined}
+                      title={dayNum >= 1 && dayNum <= 21 ? `Day ${dayNum} Move` : undefined}
                       style={{
                         background: bgColor
                       }}
@@ -2614,6 +2629,7 @@ export default function DashboardPage() {
               onFilterChange={setHabitFilter}
               habits={plan?.plan_data?.habits || []}
               langKey={langKey}
+              startDate={plan?.start_date}
             />
           </div>
 

@@ -669,6 +669,49 @@ export async function POST(request: NextRequest) {
         // Call daily coaching chat service
         const reply = await DailyChatService.chat(supabase, user.id, conversation.id, sprintDay);
 
+        // Check if LLM response indicates task completion verification
+        const lowerReply = reply.toLowerCase();
+        const shouldMarkDone = lowerReply.includes('task checked 100%') || 
+                               lowerReply.includes('task checked') ||
+                               lowerReply.includes("marked today's move as done") ||
+                               lowerReply.includes("marked today's moves as done") ||
+                               lowerReply.includes("marked today's task as done") ||
+                               lowerReply.includes("marked today's tasks as done") ||
+                               lowerReply.includes("marked today's move as completed") ||
+                               lowerReply.includes("marked today's task as completed");
+
+        if (shouldMarkDone) {
+          console.log('[Telegram Webhook] LLM reply indicates task completion. Syncing DB for dayNumber:', sprintDay);
+          // Fetch today's card
+          const { data: todayCard } = await supabase
+            .from('daily_cards')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('plan_id', plan.id)
+            .eq('day_number', sprintDay)
+            .maybeSingle();
+
+          if (todayCard && todayCard.status !== 'done') {
+            const taskItems = parseTasks(todayCard.task);
+            const checkedStates = Array(taskItems.length).fill(true);
+
+            const { error: updateErr } = await supabase
+              .from('daily_cards')
+              .update({
+                status: 'done',
+                completed_at: new Date().toISOString(),
+                checked_states: checkedStates
+              })
+              .eq('id', todayCard.id);
+
+            if (updateErr) {
+              console.error('[Telegram Webhook] Failed to auto-mark task as done from LLM reply:', updateErr);
+            } else {
+              console.log('[Telegram Webhook] Successfully marked task as done in DB from LLM reply.');
+            }
+          }
+        }
+
         // Save Deylon's reply to the database
         const finalMessages = [
           ...updatedMessages,
