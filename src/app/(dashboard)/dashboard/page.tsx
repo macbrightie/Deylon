@@ -1559,7 +1559,7 @@ interface SettingsModalProps {
   onDisconnectTelegram: () => void;
   whatsappConnected: boolean;
   onToggleWhatsApp: () => void;
-  onSaveWhatsApp?: (phone: string) => Promise<void>;
+  onSaveWhatsApp?: (phone: string) => Promise<string | void>;
   activeLanguage: string;
   onChangeLanguage: (lang: string) => void;
   onExportData: () => Promise<void>;
@@ -1584,6 +1584,7 @@ function SettingsModal({
   const [activeTab, setActiveTab] = useState<'general'>('general');
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [view, setView] = useState<'main' | 'whatsapp'>('main');
+  const [countryCode, setCountryCode] = useState('+1');
   const [phone, setPhone] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -1591,6 +1592,7 @@ function SettingsModal({
     if (isOpen) {
       setActiveTab('general');
       setView('main');
+      setCountryCode('+1');
       setPhone('');
       setIsSaving(false);
     }
@@ -1648,22 +1650,65 @@ function SettingsModal({
                 </p>
                 
                 <div className="flex flex-col gap-2 flex-1">
-                  <Label htmlFor="whatsappPhone" className="text-[#1a1a1a]/80 font-sans text-[13px] text-left">WhatsApp Number</Label>
-                  <input
-                    id="whatsappPhone"
-                    type="tel"
-                    placeholder="+1234567890"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-[#ECE8E2]/50 border border-black/10 text-[#1a1a1a] rounded-[12px] px-4 py-3 font-sans text-[15px] outline-none focus:border-black/30 transition-colors"
-                  />
+                  <Label className="text-[#1a1a1a]/80 font-sans text-[13px] text-left">WhatsApp Number</Label>
+                  <div className="flex w-full gap-2">
+                    <div className="relative flex items-center bg-[#ECE8E2]/50 border border-black/10 rounded-[12px] overflow-hidden focus-within:border-black/30 transition-colors w-fit">
+                      <select 
+                        value={countryCode}
+                        onChange={(e) => setCountryCode(e.target.value)}
+                        className="pl-3 pr-8 py-3 bg-transparent text-[#1a1a1a] font-sans text-[15px] outline-none appearance-none cursor-pointer z-10 font-medium"
+                      >
+                        <option value="+1">🇺🇸 +1</option>
+                        <option value="+44">🇬🇧 +44</option>
+                        <option value="+91">🇮🇳 +91</option>
+                        <option value="+61">🇦🇺 +61</option>
+                        <option value="+234">🇳🇬 +234</option>
+                        <option value="+27">🇿🇦 +27</option>
+                        <option value="+49">🇩🇪 +49</option>
+                        <option value="+33">🇫🇷 +33</option>
+                        <option value="+34">🇪🇸 +34</option>
+                        <option value="+39">🇮🇹 +39</option>
+                        <option value="+55">🇧🇷 +55</option>
+                        <option value="+52">🇲🇽 +52</option>
+                        <option value="+81">🇯🇵 +81</option>
+                        <option value="+86">🇨🇳 +86</option>
+                      </select>
+                      <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M6 9l6 6 6-6" />
+                        </svg>
+                      </div>
+                    </div>
+                    <input
+                      id="whatsappPhone"
+                      type="tel"
+                      placeholder="201 555 0123"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="flex-1 min-w-0 bg-[#ECE8E2]/50 border border-black/10 text-[#1a1a1a] rounded-[12px] px-4 py-3 font-sans text-[15px] outline-none focus:border-black/30 transition-colors"
+                    />
+                  </div>
                 </div>
 
                 <Button 
                   onClick={async () => {
                     if (!phone.trim()) return;
+                    
+                    // Open window synchronously to bypass popup blocker
+                    const waWindow = window.open('about:blank', '_blank');
+                    
                     setIsSaving(true);
-                    if (onSaveWhatsApp) await onSaveWhatsApp(phone.trim());
+                    if (onSaveWhatsApp) {
+                      const fullPhone = `${countryCode}${phone.replace(/\s+/g, '')}`;
+                      const waUrl = await onSaveWhatsApp(fullPhone);
+                      if (waUrl && waWindow) {
+                        waWindow.location.href = waUrl;
+                      } else if (waWindow) {
+                        waWindow.close();
+                      }
+                    } else if (waWindow) {
+                      waWindow.close();
+                    }
                     setIsSaving(false);
                     onClose();
                   }}
@@ -2392,7 +2437,7 @@ export default function DashboardPage() {
     }
   };
 
-  const handleSaveWhatsApp = async (phone: string) => {
+  const handleSaveWhatsApp = async (phone: string): Promise<string | void> => {
     if (!user) {
       console.error('[handleSaveWhatsApp] No user found');
       return;
@@ -2414,13 +2459,12 @@ export default function DashboardPage() {
 
       setWhatsappConnected(true);
 
-      // 2. Redirect to wa.me with the join code
+      // 2. Return the wa.me url
       const twilioNumber = process.env.NEXT_PUBLIC_TWILIO_PHONE_NUMBER || '+13203732683';
       const joinCode = process.env.NEXT_PUBLIC_TWILIO_JOIN_CODE || 'join purple-monkey'; 
       const waUrl = `https://wa.me/${twilioNumber.replace('+', '')}?text=${encodeURIComponent(joinCode)}`;
       
-      // Use window.location.href instead of window.open to prevent popup blockers
-      window.location.href = waUrl;
+      return waUrl;
     } catch (err) {
       console.error('[handleSaveWhatsApp] Exception:', err);
       alert('An unexpected error occurred: ' + (err as Error).message);
