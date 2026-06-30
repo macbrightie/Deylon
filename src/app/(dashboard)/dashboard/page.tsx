@@ -2393,28 +2393,38 @@ export default function DashboardPage() {
   };
 
   const handleSaveWhatsApp = async (phone: string) => {
-    if (!user) return;
-    
-    // 1. Update Supabase
-    const supabase = createClient();
-    const { error } = await supabase
-      .from('users')
-      .update({ whatsapp_number: phone })
-      .eq('id', user.id);
-
-    if (error) {
-      console.error('Error saving whatsapp number:', error);
+    if (!user) {
+      console.error('[handleSaveWhatsApp] No user found');
       return;
     }
-
-    setWhatsappConnected(true);
-
-    // 2. Redirect to wa.me with the join code
-    const twilioNumber = process.env.NEXT_PUBLIC_TWILIO_PHONE_NUMBER || '+13203732683';
-    const joinCode = process.env.NEXT_PUBLIC_TWILIO_JOIN_CODE || 'join purple-monkey'; 
-    const waUrl = `https://wa.me/${twilioNumber.replace('+', '')}?text=${encodeURIComponent(joinCode)}`;
     
-    window.open(waUrl, '_blank');
+    try {
+      // 1. Update Supabase
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('users')
+        .update({ whatsapp_number: phone })
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('Error saving whatsapp number:', error);
+        alert('Failed to save WhatsApp number: ' + error.message);
+        return;
+      }
+
+      setWhatsappConnected(true);
+
+      // 2. Redirect to wa.me with the join code
+      const twilioNumber = process.env.NEXT_PUBLIC_TWILIO_PHONE_NUMBER || '+13203732683';
+      const joinCode = process.env.NEXT_PUBLIC_TWILIO_JOIN_CODE || 'join purple-monkey'; 
+      const waUrl = `https://wa.me/${twilioNumber.replace('+', '')}?text=${encodeURIComponent(joinCode)}`;
+      
+      // Use window.location.href instead of window.open to prevent popup blockers
+      window.location.href = waUrl;
+    } catch (err) {
+      console.error('[handleSaveWhatsApp] Exception:', err);
+      alert('An unexpected error occurred: ' + (err as Error).message);
+    }
   };
 
 const handleToggleTelegram = () => {
