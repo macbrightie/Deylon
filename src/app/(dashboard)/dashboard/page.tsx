@@ -1587,6 +1587,7 @@ function SettingsModal({
   const [countryCode, setCountryCode] = useState('+1');
   const [phone, setPhone] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccessUrl, setSaveSuccessUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -1595,6 +1596,7 @@ function SettingsModal({
       setCountryCode('+1');
       setPhone('');
       setIsSaving(false);
+      setSaveSuccessUrl(null);
     }
   }, [isOpen]);
 
@@ -1645,78 +1647,100 @@ function SettingsModal({
                 <h4 className="font-sans font-medium text-[20px] text-[#1a1a1a] tracking-tight select-none mb-2 text-left">
                   Start 7-Day WhatsApp Trial
                 </h4>
-                <p className="text-[14px] text-[#1a1a1a]/60 font-sans leading-relaxed mb-6 text-left">
-                  Enter your WhatsApp number with the country code (e.g. +13203732683). You'll be redirected to WhatsApp to send a quick verification message.
-                </p>
                 
-                <div className="flex flex-col gap-2 flex-1">
-                  <Label className="text-[#1a1a1a]/80 font-sans text-[13px] text-left">WhatsApp Number</Label>
-                  <div className="flex w-full gap-2">
-                    <div className="relative flex items-center bg-[#ECE8E2]/50 border border-black/10 rounded-[12px] overflow-hidden focus-within:border-black/30 transition-colors w-fit">
-                      <select 
-                        value={countryCode}
-                        onChange={(e) => setCountryCode(e.target.value)}
-                        className="pl-3 pr-8 py-3 bg-transparent text-[#1a1a1a] font-sans text-[15px] outline-none appearance-none cursor-pointer z-10 font-medium"
-                      >
-                        <option value="+1">🇺🇸 +1</option>
-                        <option value="+44">🇬🇧 +44</option>
-                        <option value="+91">🇮🇳 +91</option>
-                        <option value="+61">🇦🇺 +61</option>
-                        <option value="+234">🇳🇬 +234</option>
-                        <option value="+27">🇿🇦 +27</option>
-                        <option value="+49">🇩🇪 +49</option>
-                        <option value="+33">🇫🇷 +33</option>
-                        <option value="+34">🇪🇸 +34</option>
-                        <option value="+39">🇮🇹 +39</option>
-                        <option value="+55">🇧🇷 +55</option>
-                        <option value="+52">🇲🇽 +52</option>
-                        <option value="+81">🇯🇵 +81</option>
-                        <option value="+86">🇨🇳 +86</option>
-                      </select>
-                      <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M6 9l6 6 6-6" />
-                        </svg>
+                {saveSuccessUrl ? (
+                  <div className="flex flex-col items-center justify-center flex-1 py-10 animate-in zoom-in-95 duration-300">
+                    <div className="w-16 h-16 bg-[#3CD070]/10 rounded-full flex items-center justify-center mb-6">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3CD070" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                    </div>
+                    <h5 className="font-sans font-medium text-[18px] text-[#1a1a1a] mb-2 text-center">Number Saved!</h5>
+                    <p className="text-[14px] text-[#1a1a1a]/60 text-center mb-8 max-w-[280px]">
+                      Your number is saved. Click below to open WhatsApp and send your verification message.
+                    </p>
+                    <a 
+                      href={saveSuccessUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      onClick={() => onClose()}
+                      className="w-full bg-[#1a1a1a] text-white hover:bg-[#1a1a1a]/90 rounded-[12px] py-4 text-[15px] font-medium transition-all text-center flex items-center justify-center gap-2"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                      </svg>
+                      Continue to WhatsApp
+                    </a>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-[14px] text-[#1a1a1a]/60 font-sans leading-relaxed mb-6 text-left">
+                      Enter your WhatsApp number with the country code (e.g. +13203732683). You'll be redirected to WhatsApp to send a quick verification message.
+                    </p>
+                    
+                    <div className="flex flex-col gap-2 flex-1">
+                      <Label className="text-[#1a1a1a]/80 font-sans text-[13px] text-left">WhatsApp Number</Label>
+                      <div className="flex w-full gap-2">
+                        <div className="relative flex items-center bg-[#ECE8E2]/50 border border-black/10 rounded-[12px] overflow-hidden focus-within:border-black/30 transition-colors w-fit">
+                          <select 
+                            value={countryCode}
+                            onChange={(e) => setCountryCode(e.target.value)}
+                            className="pl-3 pr-8 py-3 bg-transparent text-[#1a1a1a] font-sans text-[15px] outline-none appearance-none cursor-pointer z-10 font-medium"
+                          >
+                            <option value="+1">🇺🇸 +1</option>
+                            <option value="+44">🇬🇧 +44</option>
+                            <option value="+91">🇮🇳 +91</option>
+                            <option value="+61">🇦🇺 +61</option>
+                            <option value="+234">🇳🇬 +234</option>
+                            <option value="+27">🇿🇦 +27</option>
+                            <option value="+49">🇩🇪 +49</option>
+                            <option value="+33">🇫🇷 +33</option>
+                            <option value="+34">🇪🇸 +34</option>
+                            <option value="+39">🇮🇹 +39</option>
+                            <option value="+55">🇧🇷 +55</option>
+                            <option value="+52">🇲🇽 +52</option>
+                            <option value="+81">🇯🇵 +81</option>
+                            <option value="+86">🇨🇳 +86</option>
+                          </select>
+                          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M6 9l6 6 6-6" />
+                            </svg>
+                          </div>
+                        </div>
+                        <input
+                          id="whatsappPhone"
+                          type="tel"
+                          placeholder="201 555 0123"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          className="flex-1 min-w-0 bg-[#ECE8E2]/50 border border-black/10 text-[#1a1a1a] rounded-[12px] px-4 py-3 font-sans text-[15px] outline-none focus:border-black/30 transition-colors"
+                        />
                       </div>
                     </div>
-                    <input
-                      id="whatsappPhone"
-                      type="tel"
-                      placeholder="201 555 0123"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="flex-1 min-w-0 bg-[#ECE8E2]/50 border border-black/10 text-[#1a1a1a] rounded-[12px] px-4 py-3 font-sans text-[15px] outline-none focus:border-black/30 transition-colors"
-                    />
-                  </div>
-                </div>
 
-                <Button 
-                  onClick={async () => {
-                    if (!phone.trim()) return;
-                    
-                    // Open window synchronously to bypass popup blocker
-                    const waWindow = window.open('about:blank', '_blank');
-                    
-                    setIsSaving(true);
-                    if (onSaveWhatsApp) {
-                      const fullPhone = `${countryCode}${phone.replace(/\s+/g, '')}`;
-                      const waUrl = await onSaveWhatsApp(fullPhone);
-                      if (waUrl && waWindow) {
-                        waWindow.location.href = waUrl;
-                      } else if (waWindow) {
-                        waWindow.close();
-                      }
-                    } else if (waWindow) {
-                      waWindow.close();
-                    }
-                    setIsSaving(false);
-                    onClose();
-                  }}
-                  disabled={isSaving || !phone.trim()}
-                  className="w-full bg-[#1a1a1a] text-white hover:bg-[#1a1a1a]/90 rounded-[12px] py-6 text-[15px] font-medium transition-all mt-auto"
-                >
-                  {isSaving ? 'Connecting...' : 'Save & Verify'}
-                </Button>
+                    <Button 
+                      onClick={async () => {
+                        if (!phone.trim()) return;
+                        setIsSaving(true);
+                        if (onSaveWhatsApp) {
+                          const fullPhone = `${countryCode}${phone.replace(/\s+/g, '')}`;
+                          const waUrl = await onSaveWhatsApp(fullPhone);
+                          if (waUrl) {
+                            setSaveSuccessUrl(waUrl);
+                          }
+                        }
+                        setIsSaving(false);
+                      }}
+                      disabled={isSaving || !phone.trim()}
+                      className="w-full bg-[#1a1a1a] text-white hover:bg-[#1a1a1a]/90 rounded-[12px] py-6 text-[15px] font-medium transition-all mt-auto"
+                    >
+                      {isSaving ? 'Saving Number...' : 'Save & Continue'}
+                    </Button>
+                  </>
+                )}
               </div>
             ) : (
             <TabsContent value="general" className="flex flex-col h-full m-0 outline-none w-full animate-in fade-in slide-in-from-left-4 duration-300">
