@@ -364,26 +364,32 @@ export async function POST(request: NextRequest) {
           .maybeSingle();
 
         if (activePlan) {
-          const dayNumber = getDayNumber(activePlan.start_date || new Date(activePlan.created_at), user.timezone || 'Africa/Lagos');
-          const { data: todayCard } = await supabase
+          const currentDayNumber = getDayNumber(activePlan.start_date || new Date(activePlan.created_at), user.timezone || 'Africa/Lagos');
+          
+          // Find the earliest pending card
+          const { data: pendingCard } = await supabase
             .from('daily_cards')
             .select('*')
             .eq('user_id', user.id)
             .eq('plan_id', activePlan.id)
-            .eq('day_number', dayNumber)
+            .eq('status', 'pending')
+            .lte('day_number', currentDayNumber) // can't carry over future days
+            .order('day_number', { ascending: true })
+            .limit(1)
             .maybeSingle();
 
-          if (todayCard && todayCard.status === 'pending') {
+          if (pendingCard) {
+            const nextDayNumber = pendingCard.day_number + 1;
+            
             if (cleanText === 'carry over') {
               const carryOverCount = user.carry_over_count_this_week ?? 0;
               if (carryOverCount < 1) {
-                const nextDayNumber = dayNumber + 1;
                 if (nextDayNumber > 21) {
                   await sendMessage(chatId, "❌ You cannot carry over a task on the final day of the challenge!");
                   return NextResponse.json({ ok: true });
                 }
 
-                const { data: tomorrowCard } = await supabase
+                const { data: nextCard } = await supabase
                   .from('daily_cards')
                   .select('*')
                   .eq('user_id', user.id)
@@ -391,21 +397,21 @@ export async function POST(request: NextRequest) {
                   .eq('day_number', nextDayNumber)
                   .maybeSingle();
 
-                if (tomorrowCard) {
-                  let newTomorrowTask = tomorrowCard.task;
-                  if (!newTomorrowTask.includes(todayCard.task)) {
-                    newTomorrowTask = `${newTomorrowTask.trim()} ${todayCard.task.trim()}`;
+                if (nextCard) {
+                  let newNextTask = nextCard.task;
+                  if (!newNextTask.includes(pendingCard.task)) {
+                    newNextTask = `${newNextTask.trim()} ${pendingCard.task.trim()}`;
                   }
 
                   await supabase
                     .from('daily_cards')
-                    .update({ task: newTomorrowTask })
-                    .eq('id', tomorrowCard.id);
+                    .update({ task: newNextTask })
+                    .eq('id', nextCard.id);
 
                   await supabase
                     .from('daily_cards')
                     .update({ status: 'adjusted' })
-                    .eq('id', todayCard.id);
+                    .eq('id', pendingCard.id);
 
                   await supabase
                     .from('users')
@@ -413,70 +419,48 @@ export async function POST(request: NextRequest) {
                     .eq('id', user.id);
 
                   const greeting = formatUserGreeting(user.preferred_greeting, user.display_name, user.email);
-                  await sendMessage(chatId, `✅ <b>Carried over!</b>\n\nI've added today's moves to tomorrow's list. Tomorrow will be a bigger day, but you've got this!\n\nHere is tomorrow's combined task list:`);
+                  
+                  // Check if we should deliver the bubbles immediately
+                  const currentHour = new Date(new Date().toLocaleString('en-US', { timeZone: user.timezone || 'Africa/Lagos' })).getHours();
+                  const isNextCardTodayOrPast = currentDayNumber > nextDayNumber || (currentDayNumber === nextDayNumber && currentHour >= 10);
+                  
+                  if (nextCard.revealed_at || isNextCardTodayOrPast) {
+                    await sendMessage(chatId, `✅ <b>Carried over!</b>\n\nI've combined your pending moves with your next list.\n\nHere is the updated combined task list:`);
 
-                  let bubbles = (tomorrowCard.social_chat_messages as string[]) || [];
-                  if (!Array.isArray(bubbles) || bubbles.length === 0) {
-                    bubbles = [
-                      `🌅 <b>Tomorrow's Move — Day ${nextDayNumber}</b>`,
-                      `📌 <b>Task:</b>\n${formatTaskForTelegram(newTomorrowTask)}`,
-                    ];
-                  }
-                  bubbles[0] = `✨ <b>${greeting}</b>\n\n${bubbles[0]}`;
-
-                  for (let i = 0; i < bubbles.length; i++) {
-                    if (i > 0) {
-                      await new Promise((resolve) => setTimeout(resolve, 1500));
+                    let bubbles = (nextCard.social_chat_messages as string[]) || [];
+                    if (!Array.isArray(bubbles) || bubbles.length === 0) {
+                      bubbles = [
+                        `🌅 <b>Move — Day ${nextDayNumber}</b>`,
+                        `📌 <b>Task:</b>\n${formatTaskForTelegram(newNextTask)}`,
+                      ];
                     }
-                    await sendMessage(chatId, bubbles[i]);
-                  }
+                    bubbles[0] = `✨ <b>${greeting}</b>\n\n${bubbles[0]}`;
 
-                  await supabase
-                    .from('daily_cards')
-                    .update({ revealed_at: new Date().toISOString() })
-                    .eq('id', tomorrowCard.id);
+                    for (let i = 0; i < bubbles.length; i++) {
+                      if (i > 0) {
+                        await new Promise((resolve) => setTimeout(resolve, 1500));
+                      }
+                      await sendMessage(chatId, bubbles[i]);
+                    }
+
+                    await supabase
+                      .from('daily_cards')
+                      .update({ revealed_at: new Date().toISOString() })
+                      .eq('id', nextCard.id);
+                  } else {
+                    const when = currentDayNumber === nextDayNumber ? "at 10 AM" : "in the morning";
+                    await sendMessage(chatId, `✅ <b>Carried over!</b>\n\nI've combined your pending moves with your next list. I'll deliver the full combined list to you ${when}!`);
+                  }
 
                   return NextResponse.json({ ok: true });
                 }
               } else {
-                await sendMessage(chatId, "❌ You've already used your carry-over limit for this week. Let's try to finish today's task tonight!");
+                await sendMessage(chatId, "❌ You've already used your carry-over limit for this week. Let's try to finish your pending task tonight!");
                 return NextResponse.json({ ok: true });
               }
             } else if (cleanText === 'no') {
-              const nextDayNumber = dayNumber + 1;
-              const { data: tomorrowCard } = await supabase
-                .from('daily_cards')
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('plan_id', activePlan.id)
-                .eq('day_number', nextDayNumber)
-                .maybeSingle();
-
               const greeting = formatUserGreeting(user.preferred_greeting, user.display_name, user.email);
-              await sendMessage(chatId, `💪 <b>Let's do this!</b>\n\nKeep pushing to finish today's task tonight. Here is tomorrow's task to keep you prepared:`);
-
-              if (tomorrowCard) {
-                let bubbles = (tomorrowCard.social_chat_messages as string[]) || [];
-                if (!Array.isArray(bubbles) || bubbles.length === 0) {
-                  bubbles = [
-                    `🌅 <b>Tomorrow's Move — Day ${nextDayNumber}</b>`,
-                    `📌 <b>Task:</b>\n${formatTaskForTelegram(tomorrowCard.task)}`,
-                  ];
-                }
-                bubbles[0] = `✨ <b>${greeting}</b>\n\n${bubbles[0]}`;
-
-                for (let i = 0; i < bubbles.length; i++) {
-                  if (i > 0) {
-                    await new Promise((resolve) => setTimeout(resolve, 1500));
-                  }
-                  await sendMessage(chatId, bubbles[i]);
-                }
-
-                await supabase
-                  .from('daily_cards')
-                  .update({ revealed_at: new Date().toISOString() })
-                  .eq('id', tomorrowCard.id);
-              }
+              await sendMessage(chatId, `💪 <b>Let's do this, ${user.display_name.split(' ')[0]}!</b>\n\nKeep pushing to finish your pending task! I'll hold you to it.`);
               return NextResponse.json({ ok: true });
             }
           }
