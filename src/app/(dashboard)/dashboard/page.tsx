@@ -2488,7 +2488,7 @@ export default function DashboardPage() {
       // Twilio's universal WhatsApp Sandbox number is +14155238886. 
       // If the user has a dedicated WhatsApp Business number, they can set it in NEXT_PUBLIC_TWILIO_WHATSAPP_NUMBER
       const waNumber = process.env.NEXT_PUBLIC_TWILIO_WHATSAPP_NUMBER || '+14155238886';
-      const joinCode = process.env.NEXT_PUBLIC_TWILIO_JOIN_CODE || 'join purple-monkey'; 
+      const joinCode = process.env.NEXT_PUBLIC_TWILIO_JOIN_CODE || 'join but-effort'; 
       const waUrl = `https://wa.me/${waNumber.replace('+', '')}?text=${encodeURIComponent(joinCode)}`;
       
       return waUrl;
