@@ -1723,16 +1723,28 @@ function SettingsModal({
 
                     <Button 
                       onClick={async () => {
-                        if (!phone.trim()) return;
-                        setIsSaving(true);
-                        if (onSaveWhatsApp) {
-                          const fullPhone = `${countryCode}${phone.replace(/\s+/g, '')}`;
-                          const waUrl = await onSaveWhatsApp(fullPhone);
-                          if (waUrl) {
-                            setSaveSuccessUrl(waUrl);
-                          }
+                        if (!phone.trim()) {
+                          alert('Please enter a phone number!');
+                          return;
                         }
-                        setIsSaving(false);
+                        try {
+                          setIsSaving(true);
+                          if (!onSaveWhatsApp) {
+                            alert('Developer error: onSaveWhatsApp prop is missing!');
+                          } else {
+                            const fullPhone = `${countryCode}${phone.replace(/\s+/g, '')}`;
+                            const waUrl = await onSaveWhatsApp(fullPhone);
+                            if (waUrl) {
+                              setSaveSuccessUrl(waUrl);
+                            } else {
+                              alert('Save failed or no URL was returned.');
+                            }
+                          }
+                        } catch (err) {
+                          alert('Error during save: ' + (err as Error).message);
+                        } finally {
+                          setIsSaving(false);
+                        }
                       }}
                       disabled={isSaving || !phone.trim()}
                       className="w-full bg-[#1a1a1a] text-white hover:bg-[#1a1a1a]/90 rounded-[12px] py-6 text-[15px] font-medium transition-all mt-auto"
@@ -2463,6 +2475,7 @@ export default function DashboardPage() {
 
   const handleSaveWhatsApp = async (phone: string): Promise<string | void> => {
     if (!user) {
+      alert('Error: No user found. Please sign in again.');
       console.error('[handleSaveWhatsApp] No user found');
       return;
     }
@@ -2477,7 +2490,7 @@ export default function DashboardPage() {
 
       if (error) {
         console.error('Error saving whatsapp number:', error);
-        alert('Failed to save WhatsApp number: ' + error.message);
+        alert('Database Error: Failed to save WhatsApp number: ' + error.message);
         return;
       }
 
@@ -2491,7 +2504,7 @@ export default function DashboardPage() {
       return waUrl;
     } catch (err) {
       console.error('[handleSaveWhatsApp] Exception:', err);
-      alert('An unexpected error occurred: ' + (err as Error).message);
+      alert('Unexpected Error: ' + (err as Error).message);
     }
   };
 
