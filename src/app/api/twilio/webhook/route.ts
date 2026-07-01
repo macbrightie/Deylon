@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       const token = parts[1]; // deep link token
 
       if (!token) {
-        await sendWhatsAppMessage(chatId, formatForWhatsApp('👋 Welcome to Deylon! To connect your account, go to your Deylon dashboard and click <b>Connect Telegram</b>.'
+        await sendWhatsAppMessage(chatId, formatForWhatsApp('👋 Welcome to Deylon! To connect your account, go to your Deylon dashboard and click <b>Connect WhatsApp</b>.'
         ));
         return NextResponse.json({ ok: true });
       }
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       if (userError || !user) {
-        await sendWhatsAppMessage(chatId, formatForWhatsApp('👋 Welcome to Deylon! To link your Telegram, please visit your web dashboard and click <b>Connect Telegram</b>.'
+        await sendWhatsAppMessage(chatId, formatForWhatsApp('👋 Welcome to Deylon! To link your WhatsApp, please visit your web dashboard and click <b>Connect WhatsApp</b>.'
         ));
         return NextResponse.json({ ok: true });
       }
