@@ -2898,6 +2898,7 @@ const handleToggleTelegram = () => {
         onDisconnectTelegram={handleDisconnectTelegram}
         whatsappConnected={whatsappConnected}
         onToggleWhatsApp={handleToggleWhatsApp}
+        onSaveWhatsApp={handleSaveWhatsApp}
         activeLanguage={activeLanguage}
         onChangeLanguage={(lang) => setActiveLanguage(lang)}
         onExportData={handleExportData}
