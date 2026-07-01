@@ -1723,28 +1723,17 @@ function SettingsModal({
 
                     <Button 
                       onClick={async () => {
-                        if (!phone.trim()) {
-                          alert('Please enter a phone number!');
-                          return;
-                        }
-                        try {
-                          setIsSaving(true);
-                          if (!onSaveWhatsApp) {
-                            alert('Developer error: onSaveWhatsApp prop is missing!');
-                          } else {
-                            const fullPhone = `${countryCode}${phone.replace(/\s+/g, '')}`;
-                            const waUrl = await onSaveWhatsApp(fullPhone);
-                            if (waUrl) {
-                              setSaveSuccessUrl(waUrl);
-                            } else {
-                              alert('Save failed or no URL was returned.');
-                            }
+                        if (!phone.trim()) return;
+                        
+                        setIsSaving(true);
+                        if (onSaveWhatsApp) {
+                          const fullPhone = `${countryCode}${phone.replace(/\s+/g, '')}`;
+                          const waUrl = await onSaveWhatsApp(fullPhone);
+                          if (waUrl) {
+                            setSaveSuccessUrl(waUrl);
                           }
-                        } catch (err) {
-                          alert('Error during save: ' + (err as Error).message);
-                        } finally {
-                          setIsSaving(false);
                         }
+                        setIsSaving(false);
                       }}
                       disabled={isSaving || !phone.trim()}
                       className="w-full bg-[#1a1a1a] text-white hover:bg-[#1a1a1a]/90 rounded-[12px] py-6 text-[15px] font-medium transition-all mt-auto"
@@ -2475,7 +2464,6 @@ export default function DashboardPage() {
 
   const handleSaveWhatsApp = async (phone: string): Promise<string | void> => {
     if (!user) {
-      alert('Error: No user found. Please sign in again.');
       console.error('[handleSaveWhatsApp] No user found');
       return;
     }
@@ -2490,21 +2478,23 @@ export default function DashboardPage() {
 
       if (error) {
         console.error('Error saving whatsapp number:', error);
-        alert('Database Error: Failed to save WhatsApp number: ' + error.message);
+        alert('Failed to save WhatsApp number: ' + error.message);
         return;
       }
 
       setWhatsappConnected(true);
 
       // 2. Return the wa.me url
-      const twilioNumber = process.env.NEXT_PUBLIC_TWILIO_PHONE_NUMBER || '+13203732683';
+      // Twilio's universal WhatsApp Sandbox number is +14155238886. 
+      // If the user has a dedicated WhatsApp Business number, they can set it in NEXT_PUBLIC_TWILIO_WHATSAPP_NUMBER
+      const waNumber = process.env.NEXT_PUBLIC_TWILIO_WHATSAPP_NUMBER || '+14155238886';
       const joinCode = process.env.NEXT_PUBLIC_TWILIO_JOIN_CODE || 'join purple-monkey'; 
-      const waUrl = `https://wa.me/${twilioNumber.replace('+', '')}?text=${encodeURIComponent(joinCode)}`;
+      const waUrl = `https://wa.me/${waNumber.replace('+', '')}?text=${encodeURIComponent(joinCode)}`;
       
       return waUrl;
     } catch (err) {
       console.error('[handleSaveWhatsApp] Exception:', err);
-      alert('Unexpected Error: ' + (err as Error).message);
+      alert('An unexpected error occurred: ' + (err as Error).message);
     }
   };
 
