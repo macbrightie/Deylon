@@ -92,10 +92,13 @@ export async function GET(request: NextRequest) {
 
         // 4. Send morning task reminder
         const greeting = formatUserGreeting(user.preferred_greeting, user.display_name, user.email);
-        const messageText = `🌅 <b>${greeting}</b>\n\nHere's a quick reminder of your daily move today:\n\n📌 <b>${formatTaskForTelegram(card.task)}</b>\n\nYou've got this! Let's get it done today.${streakWarning}`;
+        const messageText = `🌅 <b>${greeting}</b>\n\nHere is your move for today:\n\n📌 <b>Today's Move:</b>\n${formatTaskForTelegram(card.task)}\n\nYou've got this! Let's get it done today.${streakWarning}`;
+        const followUpText = `Feel free to ask me any questions if today's task isn't perfectly clear!`;
 
         await sendMessage(user.telegram_chat_id!, messageText);
-        await appendToConversationHistory(supabase, user.id, 'assistant', messageText);
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        await sendMessage(user.telegram_chat_id!, followUpText);
+        await appendToConversationHistory(supabase, user.id, 'assistant', `${messageText}\n\n${followUpText}`);
         sentCount++;
       })
     );
