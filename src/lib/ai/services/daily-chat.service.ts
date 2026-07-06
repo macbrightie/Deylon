@@ -156,7 +156,7 @@ export class DailyChatService {
       weeklyMovesCompleted,
       coreMemories: core.map((c) => c.content),
       relevantMemories: relevant.map((r) => r.content),
-      lastThreeMessages: messages.slice(-3).map((m) => ({
+      lastEightMessages: messages.slice(-8).map((m) => ({
         role: m.role === 'assistant' ? 'deylon' : 'user',
         content: m.content,
       })),

@@ -37,7 +37,18 @@ export function parseTasks(taskText: string): TaskItem[] {
 
 export function formatTaskForTelegram(taskText: string): string {
   if (!taskText) return '';
-  return taskText
-    .replace(/\s*Daily Reps:/g, '\n\nDaily Reps:')
-    .replace(/\s*Strategy:/g, '\n\nStrategy:');
+  const parsed = parseTasks(taskText);
+  let formatted = '';
+  for (const item of parsed) {
+    let action = item.action.replace(/^(Study|Daily Reps|Strategy|Hint):\s*/i, '');
+    formatted += `• ${action}\n`;
+    if (item.example) {
+      formatted += `   <i>${item.example}</i>\n`;
+    }
+    if (item.clue) {
+      formatted += `   <i>${item.clue}</i>\n`;
+    }
+    formatted += `\n`;
+  }
+  return formatted.trim();
 }

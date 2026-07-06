@@ -22,7 +22,7 @@ export interface ContextInjectionInputs {
 
   coreMemories: string[]; // importance 4-5, max 5 items
   relevantMemories?: string[]; // importance 2-3, context-matched, max 3 items
-  lastThreeMessages: Array<{ role: 'user' | 'deylon'; content: string }>;
+  lastEightMessages: Array<{ role: 'user' | 'deylon'; content: string }>;
 }
 
 /**
@@ -43,7 +43,7 @@ export function buildContextInjection(inputs: ContextInjectionInputs): string {
           .join('\n')
       : '- None contextually relevant today';
 
-  const lastMessagesFormatted = inputs.lastThreeMessages
+  const lastMessagesFormatted = inputs.lastEightMessages
     .map((m) => `${m.role === 'deylon' ? 'Deylon' : 'User'}: ${m.content}`)
     .join('\n');
 
@@ -68,7 +68,7 @@ ${coreMemoriesFormatted}
 RELEVANT MEMORIES (context-matched):
 ${relevantMemoriesFormatted}
 
-LAST 3 MESSAGES:
+LAST 8 MESSAGES:
 ${lastMessagesFormatted}
 ---`;
 }

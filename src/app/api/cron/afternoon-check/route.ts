@@ -3,7 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { sendMessage } from '@/lib/telegram/bot';
 import { formatUserGreeting, appendToConversationHistory } from '@/lib/telegram/message';
 import { getDayNumber } from '@/lib/utils/date';
-import { parseTasks } from '@/lib/utils';
+import { parseTasks, formatTaskForTelegram } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
   // Verify cron secret
@@ -77,22 +77,38 @@ export async function GET(request: NextRequest) {
           await sendMessage(user.telegram_chat_id!, messageText);
           await appendToConversationHistory(supabase, user.id, 'assistant', messageText);
         } else if (card.status === 'pending') {
-          const taskItems = parseTasks(card.task);
-          const tasksList = taskItems.map((item) => {
-            let itemText = `⬜️ <b>${item.action}</b>`;
-            if (item.example) {
-              itemText += `\n   <i>${item.example}</i>`;
-            }
-            if (item.clue) {
-              itemText += `\n   <i>${item.clue}</i>`;
-            }
-            return itemText;
-          }).join('\n\n');
+          // Check if it's been pending for 2+ days
+          let inactiveDays = 0;
+          if (dayNumber > 1) {
+             const { data: pastCards } = await supabase
+               .from('daily_cards')
+               .select('day_number, status')
+               .eq('user_id', user.id)
+               .eq('plan_id', plan.id)
+               .eq('status', 'pending')
+               .gte('day_number', dayNumber - 2)
+               .lte('day_number', dayNumber);
+             
+             inactiveDays = pastCards?.length || 0;
+          }
 
-          const messageText = `👋 <b>${greeting}</b>\n\nHow's your move going today? Here's what's on your list:\n\n${tasksList}\n\nRemember to check them off on the dashboard once completed! Tell me: how much time did you spend on this today?`;
+          if (inactiveDays >= 2) {
+             // Re-engagement
+             const { data: fullPlan } = await supabase.from('plans').select('plan_data').eq('id', plan.id).single();
+             const planData = fullPlan?.plan_data as any;
+             const primaryGoal = planData?.primary_goal || 'your goals';
+             const why = planData?.motivational_anchor || 'become the best version of yourself';
 
-          await sendMessage(user.telegram_chat_id!, messageText);
-          await appendToConversationHistory(supabase, user.id, 'assistant', messageText);
+             const reengageText = `👀 <b>${greeting}</b>\n\nI noticed you haven't checked in for a few days. Remember why you started this journey: to achieve ${primaryGoal} and ${why}.\n\nDon't quit on yourself now! Let's get back on track. Simply reply "Done" if you've finished your tasks, or let me know if you need help!`;
+
+             await sendMessage(user.telegram_chat_id!, reengageText);
+             await appendToConversationHistory(supabase, user.id, 'assistant', reengageText);
+          } else {
+             const tasksList = formatTaskForTelegram(card.task);
+             const messageText = `👋 <b>${greeting}</b>\n\nHow's your move going today? Here's what's on your list:\n\n📌 <b>Today's Move:</b>\n${tasksList}\n\nRemember to check them off on the dashboard once completed, or just reply 'Done' here when you finish!`;
+             await sendMessage(user.telegram_chat_id!, messageText);
+             await appendToConversationHistory(supabase, user.id, 'assistant', messageText);
+          }
         }
         sentCount++;
       })

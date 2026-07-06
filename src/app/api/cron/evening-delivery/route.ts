@@ -143,10 +143,7 @@ export async function GET(request: NextRequest) {
             await sendMessage(user.telegram_chat_id!, carryOverPrompt);
             await appendToConversationHistory(supabase, user.id, 'assistant', carryOverPrompt);
           } else {
-            // Cannot carry over. Warn and deliver tomorrow's task anyway.
-            const cannotCarryMsg = `👀 <b>${greeting}</b>\n\nIt looks like today's task is still pending, and you've already used your weekly carry-over limit.\n\nTry to finish it tonight! Here is tomorrow's task to keep you prepared:`;
-            await sendMessage(user.telegram_chat_id!, cannotCarryMsg);
-
+            // Cannot carry over. Warn and deliver tomorrow's task summary anyway.
             const nextDayNumber = dayNumber + 1;
             if (nextDayNumber <= 21) {
               const { data: tomorrowCard } = await supabase
@@ -158,15 +155,14 @@ export async function GET(request: NextRequest) {
                 .maybeSingle();
 
               if (tomorrowCard) {
-                let bubbles = (tomorrowCard.social_chat_messages as string[]) || [];
-                if (!Array.isArray(bubbles) || bubbles.length === 0) {
-                  bubbles = [
-                    `🌅 <b>Tomorrow's Move — Day ${nextDayNumber}</b>`,
-                    `📌 <b>Task:</b>\n${formatTaskForTelegram(tomorrowCard.task)}`,
-                  ];
-                }
-                await sendSplitMessages(user.telegram_chat_id!, bubbles);
-                await appendToConversationHistory(supabase, user.id, 'assistant', `${cannotCarryMsg}\n\n${bubbles.join('\n\n')}`);
+                const { parseTasks } = await import('@/lib/utils');
+                const parsedTomorrow = parseTasks(tomorrowCard.task);
+                const summaryActions = parsedTomorrow.map(t => t.action.replace(/^(Study|Daily Reps|Strategy|Hint):\\s*/i, '')).join(' and ');
+                
+                const cannotCarryMsg = `👀 <b>${greeting}</b>\n\nIt looks like today's task is still pending, and you've already used your weekly carry-over limit.\n\nTry to finish it tonight! To keep you prepared, tomorrow's focus will be: <b>${summaryActions}</b>.`;
+
+                await sendMessage(user.telegram_chat_id!, cannotCarryMsg);
+                await appendToConversationHistory(supabase, user.id, 'assistant', cannotCarryMsg);
 
                 // Mark tomorrow's card as revealed
                 await supabase
@@ -174,9 +170,13 @@ export async function GET(request: NextRequest) {
                   .update({ revealed_at: new Date().toISOString() })
                   .eq('id', tomorrowCard.id);
               } else {
+                const cannotCarryMsg = `👀 <b>${greeting}</b>\n\nIt looks like today's task is still pending, and you've already used your weekly carry-over limit.\n\nTry to finish it tonight!`;
+                await sendMessage(user.telegram_chat_id!, cannotCarryMsg);
                 await appendToConversationHistory(supabase, user.id, 'assistant', cannotCarryMsg);
               }
             } else {
+              const cannotCarryMsg = `👀 <b>${greeting}</b>\n\nIt looks like today's task is still pending, and you've already used your weekly carry-over limit.\n\nTry to finish it tonight!`;
+              await sendMessage(user.telegram_chat_id!, cannotCarryMsg);
               await appendToConversationHistory(supabase, user.id, 'assistant', cannotCarryMsg);
             }
           }
