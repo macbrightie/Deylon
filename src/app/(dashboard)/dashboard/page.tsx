@@ -626,20 +626,50 @@ function HabitGrid({
   }
 
   // Map each of the 12 months to column offsets (spanning 4 to 5 weeks/columns per month)
-  const MONTH_POSITIONS = [
-    { name: months[0], col: 0 },
-    { name: months[1], col: 4 },
-    { name: months[2], col: 8 },
-    { name: months[3], col: 13 },
-    { name: months[4], col: 17 },
-    { name: months[5], col: 21 },
-    { name: months[6], col: 26 },
-    { name: months[7], col: 30 },
-    { name: months[8], col: 34 },
-    { name: months[9], col: 39 },
-    { name: months[10], col: 43 },
-    { name: months[11], col: 47 }
-  ];
+  // Dynamic MONTH_POSITIONS based on startDate
+  const MONTH_POSITIONS: { name: string; col: number }[] = [];
+  if (startDate) {
+    const parts = startDate.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      
+      const d = new Date(year, month, day);
+      let startDayOfWeek = d.getDay();
+      startDayOfWeek = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
+
+      let lastMonth = -1;
+      for (let ci = 0; ci < 52; ci++) {
+        const dayOffset = (ci * 7) - startDayOfWeek;
+        const colDate = new Date(year, month, day + dayOffset);
+        const colMonth = colDate.getMonth();
+        
+        if (colMonth !== lastMonth) {
+          MONTH_POSITIONS.push({ name: months[colMonth], col: ci });
+          lastMonth = colMonth;
+        }
+      }
+    }
+  }
+  
+  if (MONTH_POSITIONS.length === 0) {
+    // Fallback if startDate is invalid or missing
+    MONTH_POSITIONS.push(
+      { name: months[0], col: 0 },
+      { name: months[1], col: 4 },
+      { name: months[2], col: 8 },
+      { name: months[3], col: 13 },
+      { name: months[4], col: 17 },
+      { name: months[5], col: 21 },
+      { name: months[6], col: 26 },
+      { name: months[7], col: 30 },
+      { name: months[8], col: 34 },
+      { name: months[9], col: 39 },
+      { name: months[10], col: 43 },
+      { name: months[11], col: 47 }
+    );
+  }
 
   const startDayOfWeek = startDate ? (() => {
     const parts = startDate.split('-');
