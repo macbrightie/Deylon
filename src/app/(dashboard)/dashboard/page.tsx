@@ -646,7 +646,7 @@ function HabitGrid({
         const colMonth = colDate.getMonth();
         
         if (colMonth !== lastMonth) {
-          MONTH_POSITIONS.push({ name: months[colMonth], col: ci });
+          MONTH_POSITIONS.push({ name: monthNames[colMonth], col: ci });
           lastMonth = colMonth;
         }
       }
