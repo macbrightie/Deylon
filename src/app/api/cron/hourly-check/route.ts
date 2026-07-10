@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { sendMessage } from '@/lib/telegram/bot';
+import { sendPlatformMessage, sendPlatformSplitMessages } from '@/lib/messaging';
 import { formatUserGreeting, appendToConversationHistory } from '@/lib/telegram/message';
 import { getDayNumber, getTodayISO, getTomorrowISO } from '@/lib/utils/date';
 import { parseTasks, formatTaskForTelegram } from '@/lib/utils';
@@ -13,15 +13,6 @@ function extractStudyHint(taskText: string): string {
   }
   const firstSentence = taskText.split('.')[0];
   return firstSentence.replace(/Study:\s*/i, '').trim();
-}
-
-async function sendSplitMessages(chatId: number, messages: string[]) {
-  for (let i = 0; i < messages.length; i++) {
-    if (i > 0) {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-    }
-    await sendMessage(chatId, messages[i]);
-  }
 }
 
 export async function GET(request: NextRequest) {
@@ -37,10 +28,11 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createServiceClient();
 
+    // Fetch all users with either platform connected
     const { data: users, error } = await supabase
       .from('users')
-      .select('id, email, display_name, telegram_chat_id, timezone, preferred_greeting, carry_over_count_this_week, is_pro')
-      .not('telegram_chat_id', 'is', null);
+      .select('id, email, display_name, telegram_chat_id, whatsapp_number, preferred_platform, timezone, preferred_greeting, carry_over_count_this_week, is_pro')
+      .or('telegram_chat_id.not.is.null,whatsapp_number.not.is.null');
 
     if (error) {
       console.error('[hourly-check] Failed to fetch users:', error);
@@ -49,56 +41,56 @@ export async function GET(request: NextRequest) {
 
     let sentCount = 0;
     let skippedCount = 0;
+    const challengeDays = 21;
 
     const results = await Promise.allSettled(
       (users ?? []).map(async (user) => {
-        // 1. Timezone-aware local hour calculation
         const userLocalTime = new Date(
           new Date().toLocaleString('en-US', { timeZone: user.timezone || 'Africa/Lagos' })
         );
         const currentHour = forcedHour !== null ? forcedHour : userLocalTime.getHours();
 
-        // Check if we should trigger any of the 3 daily checks
-        if (currentHour === 10 || (force && forcedHour === 10)) {
-          // --- MORNING CHECK (10:00 AM) ---
-          // Fetch latest active plan
-          const { data: plan } = await supabase
-            .from('plans')
-            .select('id, created_at, start_date')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+        const { data: plan } = await supabase
+          .from('plans')
+          .select('id, created_at, start_date, plan_data')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-          if (!plan) return;
+        if (!plan) return;
 
-          const dayNumber = getDayNumber(plan.start_date || new Date(plan.created_at), user.timezone || 'Africa/Lagos');
-          
-          if (!user.is_pro && dayNumber > 14) {
-            if (dayNumber === 15) {
-              const greeting = formatUserGreeting(user.preferred_greeting, user.display_name, user.email);
-              const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://deylon.app';
-              const paywallMsg = `✨ <b>${greeting}</b>\n\nYour 14-day Deylon free trial completed yesterday. We did some great work building your habits toward your goals!\n\nHow are you feeling now that the initial sprint is done?\n\nOur journey doesn't have to stop here. Upgrading to Deylon Pro unlocks the rest of your sprint (Days 15–21), custom daily plans, and personalized strategy updates.\n\nReady to keep building? Head to your dashboard to upgrade:\n${appUrl}/dashboard`;
-              await sendMessage(user.telegram_chat_id!, paywallMsg);
-            }
-            return;
+        const dayNumber = getDayNumber(plan.start_date || new Date(plan.created_at), user.timezone || 'Africa/Lagos');
+        
+        if (!user.is_pro && dayNumber > 14) {
+          if (dayNumber === 15) {
+            const greeting = formatUserGreeting(user.preferred_greeting, user.display_name, user.email);
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://deylon.app';
+            const paywallMsg = `✨ <b>${greeting}</b>\n\nYour 14-day Deylon free trial completed yesterday. We did some great work building your habits toward your goals!\n\nHow are you feeling now that the initial sprint is done?\n\nOur journey doesn't have to stop here. Upgrading to Deylon Pro unlocks the rest of your sprint (Days 15–21), custom daily plans, and personalized strategy updates.\n\nReady to keep building? Head to your dashboard to upgrade:\n${appUrl}/dashboard`;
+            await sendPlatformMessage(user, paywallMsg);
+            await appendToConversationHistory(supabase, user.id, 'assistant', paywallMsg);
           }
+          return;
+        }
 
-          if (dayNumber > 21) return; // Sprint complete
+        if (dayNumber > challengeDays) return;
 
-          // Fetch today's card if it's pending
-          const { data: card } = await supabase
-            .from('daily_cards')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('plan_id', plan.id)
-            .eq('day_number', dayNumber)
-            .eq('status', 'pending')
-            .maybeSingle();
+        const { data: card } = await supabase
+          .from('daily_cards')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('plan_id', plan.id)
+          .eq('day_number', dayNumber)
+          .maybeSingle();
 
-          if (!card) return;
+        if (!card) return;
 
-          // 3.5 Check for Grace Period & Streak Breaks
+        const greeting = formatUserGreeting(user.preferred_greeting, user.display_name, user.email);
+
+        // ==========================================
+        // MORNING (10 AM) CHECK
+        // ==========================================
+        if (currentHour === 10) {
           let streakWarning = '';
           if (dayNumber > 1) {
             const { data: pastCards } = await supabase
@@ -118,119 +110,61 @@ export async function GET(request: NextRequest) {
             }
           }
 
-          // Send morning task reminder
-          const greeting = formatUserGreeting(user.preferred_greeting, user.display_name, user.email);
           const messageText = `🌅 <b>${greeting}</b>\n\nHere's a quick reminder of your daily move today:\n\n📌 <b>${formatTaskForTelegram(card.task)}</b>\n\nYou've got this! Let's get it done today.${streakWarning}`;
 
-          await sendMessage(user.telegram_chat_id!, messageText);
+          await sendPlatformMessage(user, messageText);
           await appendToConversationHistory(supabase, user.id, 'assistant', messageText);
           sentCount++;
+          return;
+        }
 
-        } else if (currentHour === 16 || (force && forcedHour === 16)) {
-          // --- AFTERNOON CHECK (4:00 PM) ---
-          // Fetch latest active plan
-          const { data: plan } = await supabase
-            .from('plans')
-            .select('id, created_at, start_date')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (!plan) return;
-
-          const dayNumber = getDayNumber(plan.start_date || new Date(plan.created_at), user.timezone || 'Africa/Lagos');
-          if (!user.is_pro && dayNumber > 14) return;
-          if (dayNumber > 21) return; // Sprint complete
-
-          // Fetch today's card status
-          const { data: card } = await supabase
-            .from('daily_cards')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('plan_id', plan.id)
-            .eq('day_number', dayNumber)
-            .maybeSingle();
-
-          if (!card) return;
-
-          const greeting = formatUserGreeting(user.preferred_greeting, user.display_name, user.email);
-
+        // ==========================================
+        // AFTERNOON (1 PM) CHECK
+        // ==========================================
+        if (currentHour === 13) {
           if (card.status === 'done') {
-            // Already completed
-            const messageText = `🌟 <b>${greeting}</b>\n\nI saw you checked off all tasks for today! Spectacular progress. Enjoy your evening!`;
-            await sendMessage(user.telegram_chat_id!, messageText);
+            const messageText = `🌟 <b>${greeting}</b>\n\nI saw you checked off all tasks for today! Spectacular progress. Enjoy your afternoon!`;
+            await sendPlatformMessage(user, messageText);
             await appendToConversationHistory(supabase, user.id, 'assistant', messageText);
           } else if (card.status === 'pending') {
-            const taskItems = parseTasks(card.task);
-            const tasksList = taskItems.map((item) => {
-              let itemText = `⬜️ <b>${item.action}</b>`;
-              if (item.example) {
-                itemText += `\n   <i>${item.example}</i>`;
-              }
-              if (item.clue) {
-                itemText += `\n   <i>${item.clue}</i>`;
-              }
-              return itemText;
-            }).join('\n\n');
+            const { data: pastCards } = await supabase
+              .from('daily_cards')
+              .select('status')
+              .eq('user_id', user.id)
+              .eq('plan_id', plan.id)
+              .in('day_number', [dayNumber - 1, dayNumber - 2]);
+              
+            const pendingCount = pastCards?.filter(c => c.status === 'pending').length || 0;
 
-            const messageText = `👋 <b>${greeting}</b>\n\nHow's your move going today? Here's what's on your list:\n\n${tasksList}\n\nRemember to check them off on the dashboard once completed! Tell me: how much time did you spend on this today?`;
+            if (pendingCount >= 2) {
+               const primaryGoal = (plan.plan_data as any)?.primaryGoal || 'your goals';
+               const why = (plan.plan_data as any)?.why || 'become the best version of yourself';
 
-            await sendMessage(user.telegram_chat_id!, messageText);
-            await appendToConversationHistory(supabase, user.id, 'assistant', messageText);
+               const reengageText = `👀 <b>${greeting}</b>\n\nI noticed you haven't checked in for a few days. Remember why you started this journey: to achieve ${primaryGoal} and ${why}.\n\nDon't quit on yourself now! Let's get back on track. Simply reply "Done" if you've finished your tasks, or let me know if you need help!`;
+
+               await sendPlatformMessage(user, reengageText);
+               await appendToConversationHistory(supabase, user.id, 'assistant', reengageText);
+            } else {
+               const tasksList = formatTaskForTelegram(card.task);
+               const messageText = `☀️ <b>${greeting}</b>\n\nJust a quick afternoon check-in! Have you had a chance to work on today's move yet?\n\n📌 <b>Today's Move:</b>\n${tasksList}\n\nLet me know how it's going!`;
+               await sendPlatformMessage(user, messageText);
+               await appendToConversationHistory(supabase, user.id, 'assistant', messageText);
+            }
           }
           sentCount++;
+          return;
+        }
 
-        } else if (currentHour === 21 || (force && forcedHour === 21)) {
-          // --- EVENING DELIVERY & CARRYOVER (9:00 PM) ---
-          // Sunday night weekly carryover reset
-          const userDayOfWeek = userLocalTime.getDay(); // 0 is Sunday
-          let currentCarryOverCount = user.carry_over_count_this_week ?? 0;
-          if (userDayOfWeek === 0) {
-            await supabase
-              .from('users')
-              .update({
-                carry_over_count_this_week: 0,
-                carry_over_last_reset: new Date().toISOString(),
-              })
-              .eq('id', user.id);
-            currentCarryOverCount = 0;
-          }
+        // ==========================================
+        // EVENING (8 PM) DELIVERY / CARRY-OVER
+        // ==========================================
+        if (currentHour === 20) {
+          const nextDayNumber = dayNumber + 1;
 
-          // Fetch latest active plan
-          const { data: plan } = await supabase
-            .from('plans')
-            .select('id, created_at, start_date')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (!plan) return;
-
-          const dayNumber = getDayNumber(plan.start_date || new Date(plan.created_at), user.timezone || 'Africa/Lagos');
-          if (!user.is_pro && dayNumber > 14) return;
-          if (dayNumber > 21) return; // Sprint complete
-
-          // Fetch today's card status
-          const { data: todayCard } = await supabase
-            .from('daily_cards')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('plan_id', plan.id)
-            .eq('day_number', dayNumber)
-            .maybeSingle();
-
-          if (!todayCard) return;
-
-          const greeting = formatUserGreeting(user.preferred_greeting, user.display_name, user.email);
-
-          if (todayCard.status !== 'pending') {
-            // Today's task is completed or adjusted. Deliver tomorrow's task card!
-            const nextDayNumber = dayNumber + 1;
-            if (nextDayNumber > 21) {
-              const finishedMsg = `🎉 <b>${greeting}</b>\n\nYou have completed all daily cards for this sprint! Sensational job. Rest well.`;
-              await sendMessage(user.telegram_chat_id!, finishedMsg);
+          if (card.status === 'done' || card.status === 'adjusted') {
+            if (nextDayNumber > challengeDays) {
+              const finishedMsg = `🎉 <b>${greeting}</b>\n\nYou have completed all daily cards for this challenge! Sensational job. Rest well.`;
+              await sendPlatformMessage(user, finishedMsg);
               await appendToConversationHistory(supabase, user.id, 'assistant', finishedMsg);
               return;
             }
@@ -243,49 +177,38 @@ export async function GET(request: NextRequest) {
               .eq('day_number', nextDayNumber)
               .maybeSingle();
 
-            if (!tomorrowCard) return;
+            if (tomorrowCard) {
+              let bubbles = (tomorrowCard.social_chat_messages as string[]) || [];
+              
+              if (!Array.isArray(bubbles) || bubbles.length === 0) {
+                bubbles = [
+                  `🌅 <b>Tomorrow's Move — Day ${nextDayNumber}</b>`,
+                  `📌 <b>Task:</b>\n${formatTaskForTelegram(tomorrowCard.task)}`,
+                  `Are you ready for it?`
+                ];
+              }
 
-            const studyHint = extractStudyHint(tomorrowCard.task);
-            const hintText = studyHint 
-              ? `\n\n<i>Tomorrow's focus: <b>${studyHint}</b>.</i>` 
-              : '';
-            const anticipateText = `${hintText}\n\n<i>I'll deliver the full details of your next move tomorrow morning at 10:00 AM. Get some rest!</i>`;
+              bubbles[0] = `✨ <b>${greeting}</b>\n\n${bubbles[0]}`;
 
-            let bubbles = (tomorrowCard.social_chat_messages as string[]) || [];
-            if (!Array.isArray(bubbles) || bubbles.length === 0) {
-              bubbles = [
-                `🌅 <b>Tomorrow's Move — Day ${nextDayNumber}</b>`,
-                `📌 <b>Task:</b>\n${formatTaskForTelegram(tomorrowCard.task)}\n\n<i>I'll send a reminder tomorrow morning at 10:00 AM. Get some rest!</i>`,
-              ];
-            } else {
-              bubbles = [...bubbles];
-              bubbles[bubbles.length - 1] = bubbles[bubbles.length - 1] + anticipateText;
+              await sendPlatformSplitMessages(user, bubbles);
+              await appendToConversationHistory(supabase, user.id, 'assistant', bubbles.join('\n\n'));
+
+              await supabase
+                .from('daily_cards')
+                .update({ revealed_at: new Date().toISOString() })
+                .eq('id', tomorrowCard.id);
             }
+          } else if (card.status === 'pending') {
+            const currentCarryOverCount = user.carry_over_count_this_week ?? 0;
 
-            bubbles[0] = `✨ <b>${greeting}</b>\n\n${bubbles[0]}`;
-
-            await sendSplitMessages(user.telegram_chat_id!, bubbles);
-            await appendToConversationHistory(supabase, user.id, 'assistant', bubbles.join('\n\n'));
-
-            await supabase
-              .from('daily_cards')
-              .update({ revealed_at: new Date().toISOString() })
-              .eq('id', tomorrowCard.id);
-
-          } else {
-            // Today's task is still pending!
             if (currentCarryOverCount < 1) {
-              // Offer carry-over
               const carryOverPrompt = `👀 <b>${greeting}</b>\n\nIt looks like today's task is still pending on your dashboard.\n\nWould you like to carry it over to tomorrow? (You can only do this once per week).\n\nReply with <b>"carry over"</b> to confirm, or <b>"no"</b> if you'll finish it tonight!`;
-              await sendMessage(user.telegram_chat_id!, carryOverPrompt);
+              await sendPlatformMessage(user, carryOverPrompt);
               await appendToConversationHistory(supabase, user.id, 'assistant', carryOverPrompt);
             } else {
-              // Cannot carry over. Warn and deliver tomorrow's task anyway.
-              const cannotCarryMsg = `👀 <b>${greeting}</b>\n\nIt looks like today's task is still pending, and you've already used your weekly carry-over limit.\n\nTry to finish it tonight! Here is tomorrow's task to keep you prepared:`;
-              await sendMessage(user.telegram_chat_id!, cannotCarryMsg);
+              let cannotCarryMsg = `👀 <b>${greeting}</b>\n\nIt looks like today's task is still pending, and you've already used your weekly carry-over limit.\n\nTry to finish it tonight!`;
 
-              const nextDayNumber = dayNumber + 1;
-              if (nextDayNumber <= 21) {
+              if (nextDayNumber <= challengeDays) {
                 const { data: tomorrowCard } = await supabase
                   .from('daily_cards')
                   .select('*')
@@ -302,8 +225,14 @@ export async function GET(request: NextRequest) {
                       `📌 <b>Task:</b>\n${formatTaskForTelegram(tomorrowCard.task)}`,
                     ];
                   }
-                  await sendSplitMessages(user.telegram_chat_id!, bubbles);
-                  await appendToConversationHistory(supabase, user.id, 'assistant', `${cannotCarryMsg}\n\n${bubbles.join('\n\n')}`);
+                  
+                  cannotCarryMsg = `👀 <b>${greeting}</b>\n\nIt looks like today's task is still pending, and you've already used your weekly carry-over limit.\n\nTry to finish it tonight! To keep you prepared, here is what is on the agenda for tomorrow:`;
+                  
+                  await sendPlatformMessage(user, cannotCarryMsg);
+                  await appendToConversationHistory(supabase, user.id, 'assistant', cannotCarryMsg);
+
+                  await sendPlatformSplitMessages(user, bubbles);
+                  await appendToConversationHistory(supabase, user.id, 'assistant', bubbles.join('\n\n'));
 
                   await supabase
                     .from('daily_cards')

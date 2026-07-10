@@ -1,18 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { sendMessage } from '@/lib/telegram/bot';
+import { sendPlatformMessage, sendPlatformSplitMessages } from '@/lib/messaging';
 import { formatUserGreeting, appendToConversationHistory } from '@/lib/telegram/message';
 import { getDayNumber } from '@/lib/utils/date';
 import { formatTaskForTelegram } from '@/lib/utils';
-
-async function sendSplitMessages(chatId: number, messages: string[]) {
-  for (let i = 0; i < messages.length; i++) {
-    if (i > 0) {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-    }
-    await sendMessage(chatId, messages[i]);
-  }
-}
 
 export async function GET(request: NextRequest) {
   // Verify cron secret
@@ -26,11 +17,11 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createServiceClient();
 
-    // Fetch all users with a telegram_chat_id
+    // Fetch all users with either platform connected
     const { data: users, error } = await supabase
       .from('users')
-      .select('id, email, display_name, telegram_chat_id, timezone, preferred_greeting, carry_over_count_this_week')
-      .not('telegram_chat_id', 'is', null);
+      .select('id, email, display_name, telegram_chat_id, whatsapp_number, preferred_platform, timezone, preferred_greeting, carry_over_count_this_week')
+      .or('telegram_chat_id.not.is.null,whatsapp_number.not.is.null');
 
     if (error) {
       console.error('[evening-delivery] Failed to fetch users:', error);
@@ -100,7 +91,7 @@ export async function GET(request: NextRequest) {
           if (nextDayNumber > 21) {
             // End of challenge!
             const finishedMsg = `🎉 <b>${greeting}</b>\n\nYou have completed all daily cards for this sprint! Sensational job. Rest well.`;
-            await sendMessage(user.telegram_chat_id!, finishedMsg);
+            await sendPlatformMessage(user, finishedMsg);
             await appendToConversationHistory(supabase, user.id, 'assistant', finishedMsg);
             return;
           }
@@ -126,7 +117,7 @@ export async function GET(request: NextRequest) {
           // Prepend greeting to the first bubble
           bubbles[0] = `✨ <b>${greeting}</b>\n\n${bubbles[0]}`;
 
-          await sendSplitMessages(user.telegram_chat_id!, bubbles);
+          await sendPlatformSplitMessages(user, bubbles);
           await appendToConversationHistory(supabase, user.id, 'assistant', bubbles.join('\n\n'));
 
           // Mark tomorrow's card as revealed
@@ -140,7 +131,7 @@ export async function GET(request: NextRequest) {
           if (currentCarryOverCount < 1) {
             // Offer carry-over
             const carryOverPrompt = `👀 <b>${greeting}</b>\n\nIt looks like today's task is still pending on your dashboard.\n\nWould you like to carry it over to tomorrow? (You can only do this once per week).\n\nReply with <b>"carry over"</b> to confirm, or <b>"no"</b> if you'll finish it tonight!`;
-            await sendMessage(user.telegram_chat_id!, carryOverPrompt);
+            await sendPlatformMessage(user, carryOverPrompt);
             await appendToConversationHistory(supabase, user.id, 'assistant', carryOverPrompt);
           } else {
             // Cannot carry over. Warn and deliver tomorrow's task summary anyway.
@@ -161,7 +152,7 @@ export async function GET(request: NextRequest) {
                 
                 const cannotCarryMsg = `👀 <b>${greeting}</b>\n\nIt looks like today's task is still pending, and you've already used your weekly carry-over limit.\n\nTry to finish it tonight! To keep you prepared, tomorrow's focus will be: <b>${summaryActions}</b>.`;
 
-                await sendMessage(user.telegram_chat_id!, cannotCarryMsg);
+                await sendPlatformMessage(user, cannotCarryMsg);
                 await appendToConversationHistory(supabase, user.id, 'assistant', cannotCarryMsg);
 
                 // Mark tomorrow's card as revealed
@@ -171,12 +162,12 @@ export async function GET(request: NextRequest) {
                   .eq('id', tomorrowCard.id);
               } else {
                 const cannotCarryMsg = `👀 <b>${greeting}</b>\n\nIt looks like today's task is still pending, and you've already used your weekly carry-over limit.\n\nTry to finish it tonight!`;
-                await sendMessage(user.telegram_chat_id!, cannotCarryMsg);
+                await sendPlatformMessage(user, cannotCarryMsg);
                 await appendToConversationHistory(supabase, user.id, 'assistant', cannotCarryMsg);
               }
             } else {
               const cannotCarryMsg = `👀 <b>${greeting}</b>\n\nIt looks like today's task is still pending, and you've already used your weekly carry-over limit.\n\nTry to finish it tonight!`;
-              await sendMessage(user.telegram_chat_id!, cannotCarryMsg);
+              await sendPlatformMessage(user, cannotCarryMsg);
               await appendToConversationHistory(supabase, user.id, 'assistant', cannotCarryMsg);
             }
           }

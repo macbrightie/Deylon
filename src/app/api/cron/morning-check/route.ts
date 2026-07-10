@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { sendMessage } from '@/lib/telegram/bot';
+import { sendPlatformMessage } from '@/lib/messaging';
 import { formatUserGreeting, appendToConversationHistory } from '@/lib/telegram/message';
 import { getDayNumber } from '@/lib/utils/date';
 import { formatTaskForTelegram } from '@/lib/utils';
@@ -17,11 +17,11 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createServiceClient();
 
-    // Fetch all users with a telegram_chat_id
+    // Fetch all users with either platform connected
     const { data: users, error } = await supabase
       .from('users')
-      .select('id, email, display_name, telegram_chat_id, timezone, preferred_greeting')
-      .not('telegram_chat_id', 'is', null);
+      .select('id, email, display_name, telegram_chat_id, whatsapp_number, preferred_platform, timezone, preferred_greeting')
+      .or('telegram_chat_id.not.is.null,whatsapp_number.not.is.null');
 
     if (error) {
       console.error('[morning-check] Failed to fetch users:', error);
@@ -95,9 +95,9 @@ export async function GET(request: NextRequest) {
         const messageText = `🌅 <b>${greeting}</b>\n\nHere is your move for today:\n\n📌 <b>Today's Move:</b>\n${formatTaskForTelegram(card.task)}\n\nYou've got this! Let's get it done today.${streakWarning}`;
         const followUpText = `Feel free to ask me any questions if today's task isn't perfectly clear!`;
 
-        await sendMessage(user.telegram_chat_id!, messageText);
+        await sendPlatformMessage(user, messageText);
         await new Promise((resolve) => setTimeout(resolve, 1500));
-        await sendMessage(user.telegram_chat_id!, followUpText);
+        await sendPlatformMessage(user, followUpText);
         await appendToConversationHistory(supabase, user.id, 'assistant', `${messageText}\n\n${followUpText}`);
         sentCount++;
       })
