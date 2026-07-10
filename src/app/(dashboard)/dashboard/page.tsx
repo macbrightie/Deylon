@@ -1564,6 +1564,8 @@ interface SettingsModalProps {
   onChangeLanguage: (lang: string) => void;
   onExportData: () => Promise<void>;
   onResetAccount: () => Promise<void>;
+  preferredPlatform: string;
+  onChangePreferredPlatform: (platform: string) => Promise<void>;
 }
 
 function SettingsModal({
@@ -1579,7 +1581,9 @@ function SettingsModal({
   activeLanguage,
   onChangeLanguage,
   onExportData,
-  onResetAccount
+  onResetAccount,
+  preferredPlatform,
+  onChangePreferredPlatform
 }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<'general'>('general');
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
@@ -1859,6 +1863,40 @@ function SettingsModal({
                 </div>
               </div>
 
+              {/* Notification Preference Row */}
+              <div className="mt-8 pt-6 border-t border-black/5 flex flex-col gap-3 select-none text-left">
+                <span className="font-sans font-medium text-[14.5px] text-[#1a1a1a]">
+                  Notification Preference
+                </span>
+                <p className="text-[12px] text-foreground/50 font-sans leading-normal mb-1">
+                  Choose where Deylon sends your daily messages and check-ins.
+                </p>
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-3 cursor-pointer p-3 rounded-[12px] border border-black/5 hover:bg-black/[0.02] transition-colors">
+                    <input 
+                      type="radio" 
+                      name="preferredPlatform" 
+                      value="whatsapp" 
+                      checked={preferredPlatform === 'whatsapp'} 
+                      onChange={() => onChangePreferredPlatform('whatsapp')}
+                      className="w-4 h-4 accent-[#1a1a1a]"
+                    />
+                    <span className="font-sans text-[14px] text-[#1a1a1a]">WhatsApp (Recommended)</span>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer p-3 rounded-[12px] border border-black/5 hover:bg-black/[0.02] transition-colors">
+                    <input 
+                      type="radio" 
+                      name="preferredPlatform" 
+                      value="telegram" 
+                      checked={preferredPlatform === 'telegram'} 
+                      onChange={() => onChangePreferredPlatform('telegram')}
+                      className="w-4 h-4 accent-[#1a1a1a]"
+                    />
+                    <span className="font-sans text-[14px] text-[#1a1a1a]">Telegram</span>
+                  </label>
+                </div>
+              </div>
+
               {/* Danger Zone: Reset Account */}
               <div className="mt-8 pt-6 border-t border-black/5 flex flex-col gap-3 select-none text-left">
                 <span className="font-sans font-medium text-[14.5px] text-red-600">
@@ -1889,27 +1927,28 @@ function SettingsModal({
   );
 }
 
-interface TelegramConnectModalProps {
+interface PlatformConnectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConnect: () => void;
+  onConnectTelegram: () => void;
+  onConnectWhatsApp: () => void;
 }
 
-function TelegramConnectModal({ isOpen, onClose, onConnect }: TelegramConnectModalProps) {
+function PlatformConnectModal({ isOpen, onClose, onConnectTelegram, onConnectWhatsApp }: PlatformConnectModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-[440px] p-8 flex flex-col items-center text-center">
         <DialogHeader className="w-full p-0 pb-4 text-center items-center">
-          <div className="w-16 h-16 rounded-full bg-[#24A1DE]/10 flex items-center justify-center mb-4">
+          <div className="w-16 h-16 rounded-full bg-[#1a1a1a]/5 flex items-center justify-center mb-4">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM16.2 8.75L14.7 15.8C14.6 16.3 14.3 16.4 13.9 16.2L11.6 14.5L10.5 15.6C10.4 15.7 10.3 15.8 10.1 15.8L10.25 13.6L14.25 9.98C14.42 9.83 14.21 9.75 13.99 9.9L9.04 13.01L6.9 12.34C6.43 12.2 6.42 11.87 7 11.64L15.35 8.42C15.74 8.27 16.08 8.51 16.2 8.75Z" fill="#24A1DE" />
             </svg>
           </div>
           <DialogTitle className="text-[22px] font-sans font-semibold tracking-tight text-[#1a1a1a]">
-            Connect to Telegram
+            Connect Deylon
           </DialogTitle>
           <DialogDescription className="text-[14px] text-[#6f6f77] font-sans leading-relaxed mt-2 max-w-sm">
-            Deylon works best over Telegram. Connect your account to receive your daily challenges, timing checks, and to talk with Deylon on the go.
+            Deylon works best over WhatsApp or Telegram. Connect your account to receive your daily challenges and talk with Deylon on the go.
           </DialogDescription>
         </DialogHeader>
 
@@ -1922,17 +1961,27 @@ function TelegramConnectModal({ isOpen, onClose, onConnect }: TelegramConnectMod
           <Button 
             variant="default" 
             onClick={() => {
-              onConnect();
+              onConnectWhatsApp();
               onClose();
             }}
-            className="w-full py-3 h-auto bg-[#1a1a1a] hover:bg-[#333] text-white rounded-[12px] font-sans font-medium text-[14px]"
+            className="w-full py-3 h-auto bg-[#3CD070] hover:bg-[#32B05E] text-white rounded-[12px] font-sans font-medium text-[14px] flex items-center justify-center gap-2"
+          >
+            Connect WhatsApp
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              onConnectTelegram();
+              onClose();
+            }}
+            className="w-full py-3 h-auto border border-black/10 hover:bg-black/5 text-[#1a1a1a] rounded-[12px] font-sans font-medium text-[14px]"
           >
             Connect Telegram
           </Button>
           <Button 
-            variant="outline" 
+            variant="ghost" 
             onClick={onClose}
-            className="w-full py-3 h-auto border border-black/10 hover:bg-black/5 text-[#1a1a1a] rounded-[12px] font-sans font-medium text-[14px]"
+            className="w-full py-2 h-auto text-[#1a1a1a]/60 hover:bg-black/5 rounded-[12px] font-sans font-medium text-[13px] mt-1"
           >
             Maybe later
           </Button>
@@ -1992,6 +2041,7 @@ export default function DashboardPage() {
   const [telegramConnected, setTelegramConnected] = useState(false);
   const [telegramLinkingState, setTelegramLinkingState] = useState<string | null>(null);
   const [whatsappConnected, setWhatsappConnected] = useState(false);
+  const [preferredPlatform, setPreferredPlatform] = useState<string>('whatsapp');
   const [activeLanguage, setActiveLanguage] = useState('Auto-detect');
   const [habitFilter, setHabitFilter] = useState<'overall' | 'habit'>('overall');
   const [pendingCompletion, setPendingCompletion] = useState<{cardId: string, checkedStates: boolean[]} | null>(null);
@@ -2083,6 +2133,10 @@ export default function DashboardPage() {
         if (userProfile) {
           setTelegramConnected(!!userProfile.telegram_chat_id);
           setTelegramLinkingState(userProfile.telegram_linking_state || null);
+          setWhatsappConnected(!!userProfile.whatsapp_number);
+          if (userProfile.preferred_platform) {
+            setPreferredPlatform(userProfile.preferred_platform);
+          }
           setIsPro(!!userProfile.is_pro);
 
           // Detect client timezone and sync it with Supabase if it differs or is missing
@@ -2262,6 +2316,40 @@ export default function DashboardPage() {
       } catch (err) {
         console.error('[Save Profile Error]:', err);
       }
+    }
+  };
+
+  const handleChangePreferredPlatform = async (platform: string) => {
+    if (!user) return;
+    setPreferredPlatform(platform);
+    
+    const supabase = createClient();
+    await supabase
+      .from('users')
+      .update({ preferred_platform: platform })
+      .eq('id', user.id);
+  };
+
+  const handleUpdateHabitsCheck = async (habitId: string, dayIndex: number, checked: boolean) => {
+    try {
+      const res = await fetch('/api/adjust-plan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'toggle_habit',
+          habitId,
+          dayIndex,
+          checked,
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to update habit');
+
+      // Update local state if needed (e.g., refreshing local cards)
+    } catch (err) {
+      console.error('[handleUpdateHabitsCheck Error]:', err);
     }
   };
 
@@ -2484,6 +2572,13 @@ export default function DashboardPage() {
 
       setWhatsappConnected(true);
 
+      // Call the welcome API in the background to acknowledge the platform switch
+      fetch('/api/whatsapp/welcome', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      }).catch(err => console.error('Error triggering whatsapp welcome:', err));
+
       // 2. Return the wa.me url
       // Twilio's universal WhatsApp Sandbox number is +14155238886. 
       // If the user has a dedicated WhatsApp Business number, they can set it in NEXT_PUBLIC_TWILIO_WHATSAPP_NUMBER
@@ -2647,6 +2742,8 @@ const handleToggleTelegram = () => {
           onChangeLanguage={(lang) => setActiveLanguage(lang)}
           onExportData={handleExportData}
           onResetAccount={handleResetAccount}
+          preferredPlatform={preferredPlatform}
+          onChangePreferredPlatform={handleChangePreferredPlatform}
       />
 
         <PrivacyModal 
@@ -2893,6 +2990,8 @@ const handleToggleTelegram = () => {
         onChangeLanguage={(lang) => setActiveLanguage(lang)}
         onExportData={handleExportData}
         onResetAccount={handleResetAccount}
+        preferredPlatform={preferredPlatform}
+        onChangePreferredPlatform={handleChangePreferredPlatform}
       />
 
       <UpdateGoalsDrawer 
@@ -2923,10 +3022,15 @@ const handleToggleTelegram = () => {
         isOpen={showPrivacyModal}
         onClose={() => setShowPrivacyModal(false)}
       />
-      <TelegramConnectModal 
+      <PlatformConnectModal 
         isOpen={showTelegramPrompt}
         onClose={() => setShowTelegramPrompt(false)}
-        onConnect={handleToggleTelegram}
+        onConnectTelegram={handleToggleTelegram}
+        onConnectWhatsApp={() => {
+          setShowTelegramPrompt(false);
+          setSettingsDefaultTab('general');
+          setShowSettingsModal(true);
+        }}
       />
       <GodModeWidget />
 

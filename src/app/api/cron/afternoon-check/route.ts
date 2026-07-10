@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { sendMessage } from '@/lib/telegram/bot';
+import { sendPlatformMessage } from '@/lib/messaging';
 import { formatUserGreeting, appendToConversationHistory } from '@/lib/telegram/message';
 import { getDayNumber } from '@/lib/utils/date';
 import { parseTasks, formatTaskForTelegram } from '@/lib/utils';
@@ -17,11 +17,11 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createServiceClient();
 
-    // Fetch all users with a telegram_chat_id
+    // Fetch all users with either platform connected
     const { data: users, error } = await supabase
       .from('users')
-      .select('id, email, display_name, telegram_chat_id, timezone, preferred_greeting')
-      .not('telegram_chat_id', 'is', null);
+      .select('id, email, display_name, telegram_chat_id, whatsapp_number, preferred_platform, timezone, preferred_greeting')
+      .or('telegram_chat_id.not.is.null,whatsapp_number.not.is.null');
 
     if (error) {
       console.error('[afternoon-check] Failed to fetch users:', error);
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
         if (card.status === 'done') {
           // Already completed
           const messageText = `🌟 <b>${greeting}</b>\n\nI saw you checked off all tasks for today! Spectacular progress. Enjoy your evening!`;
-          await sendMessage(user.telegram_chat_id!, messageText);
+          await sendPlatformMessage(user, messageText);
           await appendToConversationHistory(supabase, user.id, 'assistant', messageText);
         } else if (card.status === 'pending') {
           // Check if it's been pending for 2+ days
@@ -101,12 +101,12 @@ export async function GET(request: NextRequest) {
 
              const reengageText = `👀 <b>${greeting}</b>\n\nI noticed you haven't checked in for a few days. Remember why you started this journey: to achieve ${primaryGoal} and ${why}.\n\nDon't quit on yourself now! Let's get back on track. Simply reply "Done" if you've finished your tasks, or let me know if you need help!`;
 
-             await sendMessage(user.telegram_chat_id!, reengageText);
+             await sendPlatformMessage(user, reengageText);
              await appendToConversationHistory(supabase, user.id, 'assistant', reengageText);
           } else {
              const tasksList = formatTaskForTelegram(card.task);
              const messageText = `👋 <b>${greeting}</b>\n\nHow's your move going today? Here's what's on your list:\n\n📌 <b>Today's Move:</b>\n${tasksList}\n\nRemember to check them off on the dashboard once completed, or just reply 'Done' here when you finish!`;
-             await sendMessage(user.telegram_chat_id!, messageText);
+             await sendPlatformMessage(user, messageText);
              await appendToConversationHistory(supabase, user.id, 'assistant', messageText);
           }
         }
