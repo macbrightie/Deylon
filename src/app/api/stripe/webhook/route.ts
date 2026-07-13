@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
+import { Resend } from 'resend';
+import { getProWelcomeEmailHtml } from '@/lib/emails/ProWelcomeEmail';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16' as any,
@@ -32,13 +36,28 @@ export async function POST(req: Request) {
       const userId = session.metadata?.user_id;
 
       if (userId) {
-        await supabase
+        const { data: user } = await supabase
           .from('users')
           .update({ 
             is_pro: true,
             stripe_subscription_id: session.subscription as string
           })
-          .eq('id', userId);
+          .eq('id', userId)
+          .select('email, display_name')
+          .single();
+
+        if (user && user.email) {
+          try {
+            await resend.emails.send({
+              from: 'Deylon <hello@me.getdeylon.com>',
+              to: user.email,
+              subject: 'Welcome to Deylon Pro 🚀',
+              html: getProWelcomeEmailHtml(user.display_name),
+            });
+          } catch (e) {
+            console.error('Failed to send welcome email:', e);
+          }
+        }
       }
     } else if (event.type === 'customer.subscription.deleted') {
       const subscription = event.data.object as Stripe.Subscription;
