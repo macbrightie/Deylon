@@ -2060,6 +2060,33 @@ export default function DashboardPage() {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showTelegramPrompt, setShowTelegramPrompt] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
+
+  const handleCheckout = async (priceId: string | undefined) => {
+    if (!priceId) {
+      alert('Pricing not configured correctly.');
+      return;
+    }
+    try {
+      setIsCheckoutLoading(true);
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert('Failed to start checkout');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error initiating checkout');
+    } finally {
+      setIsCheckoutLoading(false);
+    }
+  };
   const [isPro, setIsPro] = useState(false);
 
   // Profile Form States
@@ -3082,16 +3109,35 @@ const handleToggleTelegram = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3 mt-6">
-            <Link
-              href="/pro"
+            <button
+              disabled={isCheckoutLoading}
               onClick={() => {
-                posthog.capture('upgrade_plan_clicked', { source: 'global_upgrade_modal' });
-                setShowUpgradeModal(false);
+                posthog.capture('upgrade_plan_clicked', { source: 'global_upgrade_modal', tier: 'yearly' });
+                handleCheckout(process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY);
               }}
-              className="w-full py-3 bg-[#1559EF] hover:bg-[#3b7aff] text-white rounded-[12px] font-sans font-medium text-center transition-colors text-[14px]"
+              className="relative w-full py-3.5 bg-[#1559EF] hover:bg-[#3b7aff] text-white rounded-[12px] font-sans font-semibold text-center transition-all text-[15px] shadow-[0_4px_14px_0_rgba(21,89,239,0.39)] disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              Upgrade now for $3.99/mo
-            </Link>
+              {isCheckoutLoading ? (
+                <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              ) : (
+                <>
+                  Yearly <span className="opacity-80 font-normal">($33.99/yr)</span>
+                  <span className="absolute -top-3 -right-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm transform rotate-3">
+                    Save 30%
+                  </span>
+                </>
+              )}
+            </button>
+            <button
+              disabled={isCheckoutLoading}
+              onClick={() => {
+                posthog.capture('upgrade_plan_clicked', { source: 'global_upgrade_modal', tier: 'monthly' });
+                handleCheckout(process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY);
+              }}
+              className="w-full py-3 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-[12px] font-sans font-medium text-center transition-colors text-[14px] disabled:opacity-50"
+            >
+              Monthly ($3.99/mo)
+            </button>
             <Button
               variant="outline"
               onClick={() => setShowUpgradeModal(false)}
