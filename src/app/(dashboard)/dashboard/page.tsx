@@ -3115,39 +3115,20 @@ const handleToggleTelegram = () => {
               Unlock Deylon Pro
             </DialogTitle>
             <DialogDescription className="text-[14px] text-[#6F6F77] leading-relaxed text-left">
-              Day 15–21 tasks are premium features. Unlock Deylon Pro to access the rest of your 21-day sprint, custom habit plans, live strategy updates, and direct support from your world-class AI habits coach.
+              Day 15–21 tasks are premium features. Unlock Deylon Pro to access the rest of your 21-day sprint, top-tier frameworks, and proactive AI coaching.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3 mt-6">
-            <button
-              disabled={isCheckoutLoading}
+            <Link
+              href="/pro"
               onClick={() => {
-                posthog.capture('upgrade_plan_clicked', { source: 'global_upgrade_modal', tier: 'yearly' });
-                handleCheckout(process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY);
+                posthog.capture('upgrade_plan_clicked', { source: 'global_upgrade_modal' });
+                setShowUpgradeModal(false);
               }}
-              className="relative w-full py-3.5 bg-[#1559EF] hover:bg-[#3b7aff] text-white rounded-[12px] font-sans font-semibold text-center transition-all text-[15px] shadow-[0_4px_14px_0_rgba(21,89,239,0.39)] disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full py-3.5 bg-[#1a1a1a] hover:bg-black/90 text-white rounded-[12px] font-sans font-semibold text-center transition-all text-[15px] flex items-center justify-center"
             >
-              {isCheckoutLoading ? (
-                <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-              ) : (
-                <>
-                  Yearly Plan <span className="opacity-80 font-normal ml-1">(See local pricing)</span>
-                  <span className="absolute -top-3 -right-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm transform rotate-3">
-                    Save 30%
-                  </span>
-                </>
-              )}
-            </button>
-            <button
-              disabled={isCheckoutLoading}
-              onClick={() => {
-                posthog.capture('upgrade_plan_clicked', { source: 'global_upgrade_modal', tier: 'monthly' });
-                handleCheckout(process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY);
-              }}
-              className="w-full py-3 bg-[#FBFAFA] hover:bg-[#f0ede6] text-[#1a1a1a] border border-black/10 rounded-[12px] font-sans font-medium text-center transition-colors text-[14px] disabled:opacity-50"
-            >
-              Monthly Plan
-            </button>
+              See Pricing &amp; Upgrade
+            </Link>
             <Button
               variant="ghost"
               onClick={() => setShowUpgradeModal(false)}
