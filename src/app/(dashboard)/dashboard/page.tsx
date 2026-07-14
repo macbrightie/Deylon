@@ -3103,7 +3103,7 @@ const handleToggleTelegram = () => {
 
       {/* Global Premium Upgrade Modal */}
       <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
-        <DialogContent className="bg-[#1E1E22] text-white max-w-[420px] border-white/10 rounded-[24px] p-8 text-left shadow-2xl">
+        <DialogContent className="bg-white text-[#1a1a1a] max-w-[420px] border-black/10 rounded-[24px] p-8 text-left shadow-2xl">
           <DialogHeader>
             <div className="w-12 h-12 rounded-full bg-[#1559EF]/10 flex items-center justify-center text-[#1559EF] mb-4">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -3111,10 +3111,10 @@ const handleToggleTelegram = () => {
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
               </svg>
             </div>
-            <DialogTitle className="text-2xl font-sans font-bold text-white mb-2 text-left">
+            <DialogTitle className="text-2xl font-sans font-bold text-[#1a1a1a] mb-2 text-left">
               Unlock Deylon Pro
             </DialogTitle>
-            <DialogDescription className="text-[14px] text-white/70 leading-relaxed text-left">
+            <DialogDescription className="text-[14px] text-[#6F6F77] leading-relaxed text-left">
               Day 15–21 tasks are premium features. Unlock Deylon Pro to access the rest of your 21-day sprint, custom habit plans, live strategy updates, and direct support from your world-class AI habits coach.
             </DialogDescription>
           </DialogHeader>
@@ -3131,7 +3131,7 @@ const handleToggleTelegram = () => {
                 <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
               ) : (
                 <>
-                  Yearly <span className="opacity-80 font-normal">($33.99/yr)</span>
+                  Yearly Plan <span className="opacity-80 font-normal ml-1">(See local pricing)</span>
                   <span className="absolute -top-3 -right-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm transform rotate-3">
                     Save 30%
                   </span>
@@ -3144,14 +3144,14 @@ const handleToggleTelegram = () => {
                 posthog.capture('upgrade_plan_clicked', { source: 'global_upgrade_modal', tier: 'monthly' });
                 handleCheckout(process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY);
               }}
-              className="w-full py-3 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-[12px] font-sans font-medium text-center transition-colors text-[14px] disabled:opacity-50"
+              className="w-full py-3 bg-[#FBFAFA] hover:bg-[#f0ede6] text-[#1a1a1a] border border-black/10 rounded-[12px] font-sans font-medium text-center transition-colors text-[14px] disabled:opacity-50"
             >
-              Monthly ($3.99/mo)
+              Monthly Plan
             </button>
             <Button
-              variant="outline"
+              variant="ghost"
               onClick={() => setShowUpgradeModal(false)}
-              className="w-full py-3 bg-white/5 hover:bg-white/10 text-white border-white/10 rounded-[12px] font-sans text-center transition-colors text-[14px]"
+              className="w-full py-3 text-[#6F6F77] hover:text-[#1a1a1a] hover:bg-black/5 rounded-[12px] font-sans text-center transition-colors text-[14px]"
             >
               Maybe later
             </Button>
