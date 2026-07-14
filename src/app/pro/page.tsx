@@ -6,14 +6,17 @@ import Link from 'next/link';
 // ─── Pricing data per region ──────────────────────────────────────────────────
 const PRICING = {
   NG: {
+    free: { display: '₦0', sub: '/month' },
     monthly: { display: '₦3,000', sub: '/month' },
     yearly: { display: '₦25,200', sub: '/year', perMonth: '₦2,100/mo' },
   },
   BR: {
+    free: { display: 'R$0', sub: '/month' },
     monthly: { display: 'R$14.90', sub: '/month' },
     yearly: { display: 'R$124.90', sub: '/year', perMonth: 'R$10.40/mo' },
   },
   DEFAULT: {
+    free: { display: '$0', sub: '/month' },
     monthly: { display: '$3.99', sub: '/month' },
     yearly: { display: '$33.99', sub: '/year', perMonth: '$2.83/mo' },
   },
@@ -21,21 +24,22 @@ const PRICING = {
 
 type PricingKey = keyof typeof PRICING;
 
-const PRO_FEATURES = [
-  '21-Day Sprint & all days beyond',
-  'Top-tier behavioral frameworks',
-  'Proactive AI coaching on WhatsApp & Telegram',
-  'Highly personalized daily conversations',
-  'Live strategy & plan adjustments',
-  'Priority support from your AI coach',
-];
-
+// ─── Features ────────────────────────────────────────────────────────────────
 const FREE_FEATURES = [
   '14-day free sprint (Days 1–14)',
   'Core daily move cards',
   'Habit activity tracker',
   'Basic AI conversation',
   'Telegram coaching check-ins',
+];
+
+const PRO_EXTRA_FEATURES = [
+  '21-Day Sprint & all days beyond',
+  'Top-tier behavioral frameworks',
+  'Proactive AI coaching on WhatsApp & Telegram',
+  'Highly personalized daily conversations',
+  'Live strategy & plan adjustments',
+  'Priority support from Deylon',
 ];
 
 export default function PricingPage() {
@@ -90,6 +94,7 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F4F0] flex flex-col items-center px-4 py-16 font-sans">
+
       {/* Header */}
       <div className="text-center max-w-xl mx-auto mb-10">
         <p className="text-[11px] font-sans font-semibold tracking-[0.15em] text-[#1559EF] uppercase mb-4">
@@ -98,8 +103,8 @@ export default function PricingPage() {
         <h1 className="font-recoleta text-[38px] md:text-[48px] font-medium text-[#1a1a1a] leading-tight tracking-tight mb-4">
           Your AI coach.<br />Fully unleashed.
         </h1>
-        <p className="text-[16px] text-[#6F6F77] leading-relaxed">
-          Start free. When you&apos;re ready to go further, unlock everything<br className="hidden md:block" /> 
+        <p className="text-[14px] text-[#6F6F77] leading-relaxed">
+          Start free. When you&apos;re ready to go further, unlock everything<br className="hidden md:block" />
           Deylon has to offer for less than a cup of coffee a week.
         </p>
       </div>
@@ -125,16 +130,9 @@ export default function PricingPage() {
           }`}
         >
           Annually
-          {billing === 'yearly' && (
-            <span className="bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-              Save 30%
-            </span>
-          )}
-          {billing === 'monthly' && (
-            <span className="bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-              Save 30%
-            </span>
-          )}
+          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${billing === 'yearly' ? 'bg-green-500 text-white' : 'bg-green-100 text-green-700'}`}>
+            Save 30%
+          </span>
         </button>
       </div>
 
@@ -148,10 +146,12 @@ export default function PricingPage() {
               DEYLON FREE
             </p>
             <div className="flex items-end gap-1 mb-1">
-              <span className="font-recoleta text-[40px] text-[#1a1a1a] leading-none">$0</span>
-              <span className="text-[14px] text-[#9ca3af] mb-1">/month</span>
+              <span className="font-recoleta text-[40px] text-[#1a1a1a] leading-none">
+                {pricing.free.display}
+              </span>
+              <span className="text-[14px] text-[#9ca3af] mb-1">{pricing.free.sub}</span>
             </div>
-            <p className="text-[13px] text-[#6F6F77] mt-2 mb-6 leading-relaxed">
+            <p className="text-[14px] text-[#6F6F77] mt-2 mb-6 leading-relaxed">
               Start your habit journey with 14 days of guided daily moves and basic AI coaching.
             </p>
             <Link
@@ -165,9 +165,9 @@ export default function PricingPage() {
           <div className="border-t border-black/5 mt-7 pt-6">
             <ul className="space-y-3">
               {FREE_FEATURES.map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-[13px] text-[#6F6F77]">
+                <li key={f} className="flex items-start gap-2.5 text-[14px] text-[#6F6F77]">
                   <svg className="w-4 h-4 mt-0.5 text-[#c4c4c4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                   {f}
                 </li>
@@ -194,12 +194,12 @@ export default function PricingPage() {
               </span>
             </div>
             {billing === 'yearly' && (
-              <p className="text-[12px] text-green-400 mb-1">
+              <p className="text-[14px] text-green-400 mb-1">
                 That&apos;s {pricing.yearly.perMonth} — billed annually
               </p>
             )}
-            <p className="text-[13px] text-white/50 mt-2 mb-6 leading-relaxed">
-              Unlock your full 21-day sprint, the most advanced habit frameworks, and proactive AI coaching on WhatsApp.
+            <p className="text-[14px] text-white/50 mt-2 mb-6 leading-relaxed">
+              Everything in Deylon Free, plus the full 21-day sprint, advanced frameworks, and proactive AI coaching.
             </p>
             <button
               disabled={isLoading}
@@ -215,26 +215,41 @@ export default function PricingPage() {
           </div>
 
           <div className="border-t border-white/10 mt-7 pt-6 relative z-10">
+            {/* Free features included */}
+            <p className="text-[11px] font-sans font-semibold tracking-wider text-white/30 uppercase mb-3">Everything in Free, plus:</p>
             <ul className="space-y-3">
-              {PRO_FEATURES.map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-[13px] text-white/80">
-                  <svg className="w-4 h-4 mt-0.5 text-[#1559EF] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              {FREE_FEATURES.map((f) => (
+                <li key={f} className="flex items-start gap-2.5 text-[14px] text-white/40">
+                  <svg className="w-4 h-4 mt-0.5 text-white/20 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                   {f}
                 </li>
               ))}
             </ul>
+            {/* Pro-only extras */}
+            <div className="border-t border-white/10 mt-4 pt-4">
+              <ul className="space-y-3">
+                {PRO_EXTRA_FEATURES.map((f) => (
+                  <li key={f} className="flex items-start gap-2.5 text-[14px] text-white/80">
+                    <svg className="w-4 h-4 mt-0.5 text-[#1559EF] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Footer note */}
-      <p className="text-[12px] text-[#9ca3af] text-center mt-8 max-w-sm">
+      <p className="text-[14px] text-[#9ca3af] text-center mt-8 max-w-sm">
         Prices shown in your local currency. Cancel anytime. No questions asked.
       </p>
 
-      <Link href="/dashboard" className="mt-4 text-[12px] text-[#6F6F77] hover:text-[#1a1a1a] transition-colors underline underline-offset-2">
+      <Link href="/dashboard" className="mt-4 text-[16px] text-[#4a4a4a] hover:text-[#1a1a1a] font-medium transition-colors underline underline-offset-2">
         ← Back to Dashboard
       </Link>
     </div>

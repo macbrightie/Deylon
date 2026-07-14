@@ -2870,16 +2870,13 @@ const handleToggleTelegram = () => {
                 </p>
               </div>
             </div>
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                posthog.capture('upgrade_plan_clicked', { source: 'day_10_14_sprint_nudge' });
-                setShowUpgradeModal(true);
-              }}
+            <Link
+              href="/pro"
+              onClick={() => posthog.capture('upgrade_plan_clicked', { source: 'day_10_14_sprint_nudge' })}
               className="px-6 py-3 rounded-[8px] bg-white text-[#104D3B] text-[13px] font-sans font-semibold hover:bg-white/95 transition-all text-center whitespace-nowrap self-start md:self-auto hover:scale-[1.02] active:scale-[0.98]"
             >
               Upgrade to Pro
-            </button>
+            </Link>
           </div>
         )}
 
@@ -2914,7 +2911,7 @@ const handleToggleTelegram = () => {
                   isPaywallLocked={!isPro && dayNum >= 15}
                   onPaywallLockClick={() => {
                     posthog.capture('upgrade_plan_clicked', { source: `card_day_${dayNum}` });
-                    setShowUpgradeModal(true);
+                    window.location.href = '/pro';
                   }}
                 />
               );
@@ -2981,19 +2978,16 @@ const handleToggleTelegram = () => {
               {t('upgrade_pro', langKey)}
             </h3>
             <div className="mt-5">
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  posthog.capture('upgrade_plan_clicked', { source: 'sidebar_upgrade_card' });
-                  setShowUpgradeModal(true);
-                }}
+              <Link
+                href="/pro"
+                onClick={() => posthog.capture('upgrade_plan_clicked', { source: 'sidebar_upgrade_card' })}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[8px] bg-white/10 border border-white/10 text-white text-[12px] font-sans hover:bg-white/15 transition-colors"
               >
                 {t('upgrade_plan', langKey) || 'Upgrade plan'}
                 <svg width="12" height="12" viewBox="0 0 20 20" fill="none">
                   <path d="M4 10h12M10 4l6 6-6 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-              </button>
+              </Link>
             </div>
           </div>
         </div>
