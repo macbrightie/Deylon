@@ -1208,9 +1208,10 @@ interface RoadmapOverlayProps {
   onClose: () => void;
   plan: any;
   dailyCards: any[];
+  onUpgradeClick?: () => void;
 }
 
-function RoadmapOverlay({ isOpen, onClose, plan, dailyCards }: RoadmapOverlayProps) {
+function RoadmapOverlay({ isOpen, onClose, plan, dailyCards, onUpgradeClick }: RoadmapOverlayProps) {
   const [hoverNode, setHoverNode] = useState<number | null>(null);
   const [lockedPhase, setLockedPhase] = useState<any | null>(null);
 
@@ -1382,13 +1383,16 @@ function RoadmapOverlay({ isOpen, onClose, plan, dailyCards }: RoadmapOverlayPro
               Phase {lockedPhase.id} ({lockedPhase.title}) is a premium feature. Lock in your relocation success and get personalized admissions guides, visa application templates, and live software engineering portfolio feedback tailored specifically for France.
             </p>
             <div className="flex flex-col gap-3">
-              <Link
-                href="/pro"
-                onClick={() => posthog.capture('upgrade_plan_clicked', { source: 'premium_upgrade_modal' })}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  posthog.capture('upgrade_plan_clicked', { source: 'premium_upgrade_modal' });
+                  onUpgradeClick?.();
+                }}
                 className="w-full py-3 bg-[#1559EF] hover:bg-[#3b7aff] text-white rounded-[12px] font-sans font-medium text-center transition-colors text-[14px]"
               >
                 Upgrade now
-              </Link>
+              </button>
               <button
                 onClick={() => setLockedPhase(null)}
                 className="w-full py-3 bg-white/5 hover:bg-white/10 text-white rounded-[12px] font-sans text-center transition-colors text-[14px]"
@@ -2866,13 +2870,16 @@ const handleToggleTelegram = () => {
                 </p>
               </div>
             </div>
-            <Link
-              href="/pro"
-              onClick={() => posthog.capture('upgrade_plan_clicked', { source: 'day_10_14_sprint_nudge' })}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                posthog.capture('upgrade_plan_clicked', { source: 'day_10_14_sprint_nudge' });
+                setShowUpgradeModal(true);
+              }}
               className="px-6 py-3 rounded-[8px] bg-white text-[#104D3B] text-[13px] font-sans font-semibold hover:bg-white/95 transition-all text-center whitespace-nowrap self-start md:self-auto hover:scale-[1.02] active:scale-[0.98]"
             >
               Upgrade to Pro
-            </Link>
+            </button>
           </div>
         )}
 
@@ -2974,16 +2981,19 @@ const handleToggleTelegram = () => {
               {t('upgrade_pro', langKey)}
             </h3>
             <div className="mt-5">
-              <Link
-                href="/pro"
-                onClick={() => posthog.capture('upgrade_plan_clicked', { source: 'sidebar_upgrade_card' })}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  posthog.capture('upgrade_plan_clicked', { source: 'sidebar_upgrade_card' });
+                  setShowUpgradeModal(true);
+                }}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[8px] bg-white/10 border border-white/10 text-white text-[12px] font-sans hover:bg-white/15 transition-colors"
               >
                 {t('upgrade_plan', langKey) || 'Upgrade plan'}
                 <svg width="12" height="12" viewBox="0 0 20 20" fill="none">
                   <path d="M4 10h12M10 4l6 6-6 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-              </Link>
+              </button>
             </div>
           </div>
         </div>
