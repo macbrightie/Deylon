@@ -232,48 +232,67 @@ export async function POST(request: NextRequest) {
         );
 
         let startDate = '';
-        if (cleanText === 'today') {
+
+        // Fuzzy contains-based helpers
+        const hasWord = (w: string) => new RegExp(`\\b${w}\\b`).test(cleanText);
+
+        if (hasWord('today') && !hasWord('not') && !cleanText.startsWith('no')) {
+          // "no i mean today", "start today", "today please"
           const currentHour = userLocalTime.getHours();
           if (currentHour >= 21) {
             await sendMessage(chatId, `⚠️ It's past 9 PM, so today is almost over. Please select "tomorrow" or another date.`);
             return NextResponse.json({ ok: true });
           }
           startDate = getTodayISO(timezone);
-        } else if (cleanText === 'tomorrow') {
+        } else if (hasWord('tomorrow')) {
           startDate = getTomorrowISO(timezone);
         } else {
-          // Check for weekdays first, e.g. "wednesday", "friday"
-          const weekdays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-          let matchedDayIndex = -1;
-          for (let i = 0; i < weekdays.length; i++) {
-            if (cleanText.includes(weekdays[i])) {
-              matchedDayIndex = i;
-              break;
+          // Ordinal day-of-month: "15th", "its 15th", "the 1st", "22nd"
+          const ordinalMatch = cleanText.match(/\b(\d{1,2})(?:st|nd|rd|th)\b/);
+          if (ordinalMatch) {
+            const dayNum = parseInt(ordinalMatch[1], 10);
+            if (dayNum >= 1 && dayNum <= 31) {
+              const candidate = new Date(userLocalTime);
+              candidate.setDate(dayNum);
+              // If that day is today or in the past, roll to next month
+              if (candidate.getTime() < userLocalTime.getTime() && candidate.getDate() !== userLocalTime.getDate()) {
+                candidate.setMonth(candidate.getMonth() + 1);
+                candidate.setDate(dayNum);
+              }
+              startDate = candidate.toISOString().split('T')[0];
             }
-          }
-
-          if (matchedDayIndex !== -1) {
-            const todayDayIndex = userLocalTime.getDay(); // 0 is Sunday
-            let daysOffset = matchedDayIndex - todayDayIndex;
-            if (daysOffset <= 0) {
-              daysOffset += 7; // Next week
-            }
-            const date = new Date(userLocalTime);
-            date.setDate(date.getDate() + daysOffset);
-            startDate = date.toISOString().split('T')[0];
           } else {
-            // Check for relative day offset e.g., "in 3 days", "3 days", "in 3 days time"
-            const relativeMatch = cleanText.match(/(?:in\s+)?(\d+)\s*days?/i);
-            if (relativeMatch) {
-              const daysOffset = parseInt(relativeMatch[1], 10);
+            // Weekday names: "wednesday", "friday"
+            const weekdays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            let matchedDayIndex = -1;
+            for (let i = 0; i < weekdays.length; i++) {
+              if (cleanText.includes(weekdays[i])) {
+                matchedDayIndex = i;
+                break;
+              }
+            }
+
+            if (matchedDayIndex !== -1) {
+              const todayDayIndex = userLocalTime.getDay();
+              let daysOffset = matchedDayIndex - todayDayIndex;
+              if (daysOffset <= 0) daysOffset += 7;
               const date = new Date(userLocalTime);
               date.setDate(date.getDate() + daysOffset);
               startDate = date.toISOString().split('T')[0];
             } else {
-              // Check for YYYY-MM-DD
-              const dateMatch = cleanText.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-              if (dateMatch) {
-                startDate = cleanText;
+              // Relative: "in 3 days", "3 days from now"
+              const relativeMatch = cleanText.match(/(?:in\s+)?(\d+)\s*days?/i);
+              if (relativeMatch) {
+                const daysOffset = parseInt(relativeMatch[1], 10);
+                const date = new Date(userLocalTime);
+                date.setDate(date.getDate() + daysOffset);
+                startDate = date.toISOString().split('T')[0];
+              } else {
+                // YYYY-MM-DD (anywhere in the string)
+                const dateMatch = cleanText.match(/(\d{4})-(\d{2})-(\d{2})/);
+                if (dateMatch) {
+                  startDate = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
+                }
               }
             }
           }
