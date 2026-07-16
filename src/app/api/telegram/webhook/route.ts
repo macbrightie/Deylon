@@ -715,22 +715,8 @@ export async function POST(request: NextRequest) {
             await supabase.from('plans').update({ start_date: newStartDate }).eq('id', plan.id);
 
             if (newStartDate === getTodayISO(timezone)) {
-              // Deliver day 1 card immediately
-              const { data: todayCard } = await supabase
-                .from('daily_cards')
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('plan_id', plan.id)
-                .eq('day_number', 1)
-                .maybeSingle();
-
-              const msg = `🚀 <b>Let's go! Your challenge starts TODAY.</b>\n\nHere's your very first daily move:\n\n📌 <b>${formatTaskForTelegram(todayCard?.task || 'No task assigned')}</b>\n\nYou've got this! Let me know when you're done.`;
-              await sendMessage(chatId, msg);
-              await appendToConversationHistory(supabase, user.id, 'assistant', msg);
-
-              if (todayCard) {
-                await supabase.from('daily_cards').update({ revealed_at: new Date().toISOString() }).eq('id', todayCard.id);
-              }
+              // Just acknowledge — the 10 AM cron will deliver the task
+              await sendMessage(chatId, `✅ <b>Got it, ${user.display_name || 'friend'}!</b> I've updated your challenge to start <b>today</b>.\n\nI'll send your first daily move at <b>10 AM</b>. Rest up and get ready! 💪`);
             } else {
               await sendMessage(chatId, `✅ <b>Got it!</b> I've rescheduled your challenge to start on <b>${newStartDate}</b>.\n\nI'll deliver your first daily move that morning at 10 AM. See you then!`);
             }
