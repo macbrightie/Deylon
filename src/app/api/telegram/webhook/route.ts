@@ -653,10 +653,95 @@ export async function POST(request: NextRequest) {
         // PRE-START CHECK: If the sprint hasn't started yet, intercept the chat!
         const sprintDayCalc = getDayNumber(plan.start_date || new Date(plan.created_at), user.timezone || 'Africa/Lagos');
         if (sprintDayCalc < 1) {
-          const greeting = formatUserGreeting(user.preferred_greeting, user.display_name, user.email);
-          await sendMessage(chatId, `🌅 <b>Hey ${user.display_name || 'friend'}!</b>\n\nI'm super excited too! But your challenge doesn't officially start until tomorrow morning at 10 AM.\n\nRest up, and I'll see you then!`);
+          const timezone = user.timezone || 'Africa/Lagos';
+          const userLocalTime = new Date(new Date().toLocaleString('en-US', { timeZone: timezone }));
+          const msgClean = text.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '').trim();
+          const hasWord = (w: string) => new RegExp(`\\b${w}\\b`).test(msgClean);
+
+          // Detect reschedule intent
+          let newStartDate = '';
+          if (hasWord('today') && !hasWord('not')) {
+            const currentHour = userLocalTime.getHours();
+            if (currentHour >= 21) {
+              await sendMessage(chatId, `⚠️ It's past 9 PM — too late to kick off today. Want to start <b>tomorrow</b> instead? Just reply "tomorrow".`);
+              return NextResponse.json({ ok: true });
+            }
+            newStartDate = getTodayISO(timezone);
+          } else if (hasWord('tomorrow') || msgClean.includes('can i start tomorrow')) {
+            newStartDate = getTomorrowISO(timezone);
+          } else {
+            // Ordinal day: "15th", "1st", "22nd"
+            const ordinalMatch = msgClean.match(/\b(\d{1,2})(?:st|nd|rd|th)\b/);
+            if (ordinalMatch) {
+              const dayNum = parseInt(ordinalMatch[1], 10);
+              if (dayNum >= 1 && dayNum <= 31) {
+                const candidate = new Date(userLocalTime);
+                candidate.setDate(dayNum);
+                if (candidate.getTime() < userLocalTime.getTime() && candidate.getDate() !== userLocalTime.getDate()) {
+                  candidate.setMonth(candidate.getMonth() + 1);
+                  candidate.setDate(dayNum);
+                }
+                newStartDate = candidate.toISOString().split('T')[0];
+              }
+            } else {
+              // Weekday name
+              const weekdays = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+              let wdIdx = -1;
+              for (let i = 0; i < weekdays.length; i++) {
+                if (msgClean.includes(weekdays[i])) { wdIdx = i; break; }
+              }
+              if (wdIdx !== -1) {
+                let diff = wdIdx - userLocalTime.getDay();
+                if (diff <= 0) diff += 7;
+                const d = new Date(userLocalTime);
+                d.setDate(d.getDate() + diff);
+                newStartDate = d.toISOString().split('T')[0];
+              } else {
+                const relMatch = msgClean.match(/(?:in\s+)?(\d+)\s*days?/i);
+                if (relMatch) {
+                  const d = new Date(userLocalTime);
+                  d.setDate(d.getDate() + parseInt(relMatch[1], 10));
+                  newStartDate = d.toISOString().split('T')[0];
+                } else {
+                  const isoMatch = msgClean.match(/(\d{4})-(\d{2})-(\d{2})/);
+                  if (isoMatch) newStartDate = `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+                }
+              }
+            }
+          }
+
+          if (newStartDate) {
+            // Update the plan's start_date
+            await supabase.from('plans').update({ start_date: newStartDate }).eq('id', plan.id);
+
+            if (newStartDate === getTodayISO(timezone)) {
+              // Deliver day 1 card immediately
+              const { data: todayCard } = await supabase
+                .from('daily_cards')
+                .select('*')
+                .eq('user_id', user.id)
+                .eq('plan_id', plan.id)
+                .eq('day_number', 1)
+                .maybeSingle();
+
+              const msg = `🚀 <b>Let's go! Your challenge starts TODAY.</b>\n\nHere's your very first daily move:\n\n📌 <b>${formatTaskForTelegram(todayCard?.task || 'No task assigned')}</b>\n\nYou've got this! Let me know when you're done.`;
+              await sendMessage(chatId, msg);
+              await appendToConversationHistory(supabase, user.id, 'assistant', msg);
+
+              if (todayCard) {
+                await supabase.from('daily_cards').update({ revealed_at: new Date().toISOString() }).eq('id', todayCard.id);
+              }
+            } else {
+              await sendMessage(chatId, `✅ <b>Got it!</b> I've rescheduled your challenge to start on <b>${newStartDate}</b>.\n\nI'll deliver your first daily move that morning at 10 AM. See you then!`);
+            }
+          } else {
+            // No date intent detected — tell them their current schedule and offer to change it
+            const greeting = formatUserGreeting(user.preferred_greeting, user.display_name, user.email);
+            await sendMessage(chatId, `🌅 <b>Hey ${user.display_name || 'friend'}!</b>\n\nYour challenge is currently scheduled to start on <b>${plan.start_date}</b>.\n\nWant to start sooner? Just say "today", "tomorrow", or give me a specific date (e.g. "the 16th" or "Friday").`);
+          }
           return NextResponse.json({ ok: true });
         }
+
 
         const updatedMessages = [
           ...(conversation.messages || []),
