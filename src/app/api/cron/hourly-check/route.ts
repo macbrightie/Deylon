@@ -119,46 +119,44 @@ export async function GET(request: NextRequest) {
         }
 
         // ==========================================
-        // AFTERNOON (1 PM) CHECK
+        // AFTERNOON (4 PM) CHECK
         // ==========================================
-        if (currentHour === 13) {
-          if (card.status === 'done') {
-            const messageText = `🌟 <b>${greeting}</b>\n\nI saw you checked off all tasks for today! Spectacular progress. Enjoy your afternoon!`;
+        if (currentHour === 16) {
+          if (card.status === 'done' || card.status === 'adjusted') {
+            // Task is done — celebrate and don't repeat the task
+            const messageText = `🌟 *${greeting}*\n\nNice work getting today's move done! You're building serious momentum. Enjoy your afternoon — I'll check in this evening.`;
             await sendPlatformMessage(user, messageText);
             await appendToConversationHistory(supabase, user.id, 'assistant', messageText);
-          } else if (card.status === 'pending') {
+          } else {
+            // Task still pending — reference it by name, don't repeat the whole thing
+            const taskTitle = card.task.split('\n')[0].replace(/^[•\-\*]\s*/, '').slice(0, 80);
             const { data: pastCards } = await supabase
               .from('daily_cards')
               .select('status')
               .eq('user_id', user.id)
               .eq('plan_id', plan.id)
               .in('day_number', [dayNumber - 1, dayNumber - 2]);
-              
+
             const pendingCount = pastCards?.filter(c => c.status === 'pending').length || 0;
 
+            let messageText: string;
             if (pendingCount >= 2) {
-               const primaryGoal = (plan.plan_data as any)?.primaryGoal || 'your goals';
-               const why = (plan.plan_data as any)?.why || 'become the best version of yourself';
-
-               const reengageText = `👀 <b>${greeting}</b>\n\nI noticed you haven't checked in for a few days. Remember why you started this journey: to achieve ${primaryGoal} and ${why}.\n\nDon't quit on yourself now! Let's get back on track. Simply reply "Done" if you've finished your tasks, or let me know if you need help!`;
-
-               await sendPlatformMessage(user, reengageText);
-               await appendToConversationHistory(supabase, user.id, 'assistant', reengageText);
+              const primaryGoal = (plan.plan_data as any)?.primaryGoal || 'your goals';
+              messageText = `👀 *${greeting}*\n\nHaven't seen you in a couple of days — just checking in. Your goal of *${primaryGoal}* is worth the push.\n\nYour move for today is still pending. Even 10 minutes counts. Reply \"Done\" whenever you've made progress!`;
             } else {
-               const tasksList = formatTaskForTelegram(card.task);
-               const messageText = `☀️ <b>${greeting}</b>\n\nJust a quick afternoon check-in! Have you had a chance to work on today's move yet?\n\n📌 <b>Today's Move:</b>\n${tasksList}\n\nLet me know how it's going!`;
-               await sendPlatformMessage(user, messageText);
-               await appendToConversationHistory(supabase, user.id, 'assistant', messageText);
+              messageText = `☀️ *${greeting}*\n\nAfternoon check-in — *${taskTitle}* is still on your list for today.\n\nHow's it going? Let me know when you've knocked it out, or reply \"done\" to check it off!`;
             }
+            await sendPlatformMessage(user, messageText);
+            await appendToConversationHistory(supabase, user.id, 'assistant', messageText);
           }
           sentCount++;
           return;
         }
 
         // ==========================================
-        // EVENING (8 PM) DELIVERY / CARRY-OVER
+        // EVENING (9 PM) DELIVERY / CARRY-OVER
         // ==========================================
-        if (currentHour === 20) {
+        if (currentHour === 21) {
           const nextDayNumber = dayNumber + 1;
 
           if (card.status === 'done' || card.status === 'adjusted') {
@@ -199,14 +197,15 @@ export async function GET(request: NextRequest) {
                 .eq('id', tomorrowCard.id);
             }
           } else if (card.status === 'pending') {
+            const taskTitle = card.task.split('\n')[0].replace(/^[•\-\*]\s*/, '').slice(0, 80);
             const currentCarryOverCount = user.carry_over_count_this_week ?? 0;
 
             if (currentCarryOverCount < 1) {
-              const carryOverPrompt = `👀 <b>${greeting}</b>\n\nIt looks like today's task is still pending on your dashboard.\n\nWould you like to carry it over to tomorrow? (You can only do this once per week).\n\nReply with <b>"carry over"</b> to confirm, or <b>"no"</b> if you'll finish it tonight!`;
+              const carryOverPrompt = `👀 *${greeting}*\n\n*${taskTitle}* is still pending on your dashboard.\n\nWould you like to carry it over to tomorrow? (You can only do this once per week).\n\nReply *"carry over"* to confirm, or *"no"* if you'll finish it tonight!`;
               await sendPlatformMessage(user, carryOverPrompt);
               await appendToConversationHistory(supabase, user.id, 'assistant', carryOverPrompt);
             } else {
-              let cannotCarryMsg = `👀 <b>${greeting}</b>\n\nIt looks like today's task is still pending, and you've already used your weekly carry-over limit.\n\nTry to finish it tonight!`;
+              let cannotCarryMsg = `👀 *${greeting}*\n\n*${taskTitle}* is still pending and you've already used your weekly carry-over. Push to finish it tonight — you've got this!`;
 
               if (nextDayNumber <= challengeDays) {
                 const { data: tomorrowCard } = await supabase
