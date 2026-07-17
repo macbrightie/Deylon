@@ -466,8 +466,9 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // 1.8 Intercept completion/done messages
-      const isCompletion = /^(done|check|completed|finished|task done|mark done|mark completed|all done|done today|i am done|i'm done)$/i.test(cleanText);
+      // 1.8 Intercept completion/done messages — broad fuzzy match
+      const completionText = text.toLowerCase().trim();
+      const isCompletion = /\b(done|completed|finished|complete|task done|i(('ve?)|( have)) (done|completed|finished)|i did it|all done|done today|checked it)\b/i.test(completionText);
       if (isCompletion) {
         const { data: activePlan } = await supabase
           .from('plans')
@@ -621,8 +622,78 @@ export async function POST(request: NextRequest) {
         // PRE-START CHECK: If the sprint hasn't started yet, intercept the chat!
         const sprintDayCalc = getDayNumber(plan.start_date || new Date(plan.created_at), user.timezone || 'Africa/Lagos');
         if (sprintDayCalc < 1) {
-          const greeting = formatUserGreeting(user.preferred_greeting, user.display_name, user.email);
-          await sendWhatsAppMessage(chatId, formatForWhatsApp(`🌅 <b>Hey ${user.display_name || 'friend'}!</b>\n\nI'm super excited too! But your challenge doesn't officially start until tomorrow morning at 10 AM.\n\nRest up, and I'll see you then!`));
+          const timezone = user.timezone || 'Africa/Lagos';
+          const userLocalTime = new Date(new Date().toLocaleString('en-US', { timeZone: timezone }));
+          const msgClean = text.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '').trim();
+          const hasWord = (w: string) => new RegExp(`\\b${w}\\b`).test(msgClean);
+
+          let newStartDate = '';
+          if (hasWord('today') && !hasWord('not')) {
+            const currentHour = userLocalTime.getHours();
+            if (currentHour >= 21) {
+              await sendWhatsAppMessage(chatId, formatForWhatsApp(`⚠️ It's past 9 PM — too late to kick off today. Want to start *tomorrow* instead? Just reply "tomorrow".`));
+              return NextResponse.json({ ok: true });
+            }
+            newStartDate = getTodayISO(timezone);
+          } else if (hasWord('tomorrow')) {
+            newStartDate = getTomorrowISO(timezone);
+          } else {
+            const ordinalMatch = msgClean.match(/\b(\d{1,2})(?:st|nd|rd|th)\b/);
+            if (ordinalMatch) {
+              const dayNum = parseInt(ordinalMatch[1], 10);
+              if (dayNum >= 1 && dayNum <= 31) {
+                const candidate = new Date(userLocalTime);
+                candidate.setDate(dayNum);
+                if (candidate.getTime() < userLocalTime.getTime() && candidate.getDate() !== userLocalTime.getDate()) {
+                  candidate.setMonth(candidate.getMonth() + 1);
+                  candidate.setDate(dayNum);
+                }
+                newStartDate = candidate.toISOString().split('T')[0];
+              }
+            } else {
+              const weekdays = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+              let wdIdx = -1;
+              for (let i = 0; i < weekdays.length; i++) {
+                if (msgClean.includes(weekdays[i])) { wdIdx = i; break; }
+              }
+              if (wdIdx !== -1) {
+                let diff = wdIdx - userLocalTime.getDay();
+                if (diff <= 0) diff += 7;
+                const d = new Date(userLocalTime);
+                d.setDate(d.getDate() + diff);
+                newStartDate = d.toISOString().split('T')[0];
+              } else {
+                const relMatch = msgClean.match(/(?:in\s+)?(\d+)\s*days?/i);
+                if (relMatch) {
+                  const d = new Date(userLocalTime);
+                  d.setDate(d.getDate() + parseInt(relMatch[1], 10));
+                  newStartDate = d.toISOString().split('T')[0];
+                } else {
+                  const isoMatch = msgClean.match(/(\d{4})-(\d{2})-(\d{2})/);
+                  if (isoMatch) newStartDate = `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+                }
+              }
+            }
+          }
+
+          if (newStartDate) {
+            await supabase.from('plans').update({ start_date: newStartDate }).eq('id', plan.id);
+            if (newStartDate === getTodayISO(timezone)) {
+              await sendWhatsAppMessage(chatId, formatForWhatsApp(`✅ *Got it, ${user.display_name || 'friend'}!* I've updated your challenge to start *today*.
+
+I'll send your first daily move at *10 AM*. Rest up and get ready! 💪`));
+            } else {
+              await sendWhatsAppMessage(chatId, formatForWhatsApp(`✅ *Got it!* I've rescheduled your challenge to start on *${newStartDate}*.
+
+I'll deliver your first daily move that morning at 10 AM. See you then!`));
+            }
+          } else {
+            await sendWhatsAppMessage(chatId, formatForWhatsApp(`🌅 *Hey ${user.display_name || 'friend'}!*
+
+Your challenge is currently scheduled to start on *${plan.start_date}*.
+
+Want to start sooner? Just say "today", "tomorrow", or give me a specific date (e.g. "the 16th" or "Friday").`));
+          }
           return NextResponse.json({ ok: true });
         }
 
