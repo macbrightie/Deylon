@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     const chatId = message.chat.id;
-    const text = message.text.trim();
+    const text = message.text.replace(/’/g, "'").trim();
 
     // Handle /start <token> command — links Telegram to Deylon account
     if (text.startsWith('/start')) {

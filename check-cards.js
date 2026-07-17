@@ -2,26 +2,32 @@ const { createClient } = require('@supabase/supabase-js');
 const dotenv = require('dotenv');
 dotenv.config({ path: '.env.local' });
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 async function main() {
-  const { data: users, error: uErr } = await supabase.from('users').select('*');
+  const userId = 'bc6d3a25-56f9-4013-a0a5-c50cee6ed82f';
   
-  for (const user of users || []) {
-     const { data: plan } = await supabase.from('plans').select('start_date').eq('user_id', user.id).eq('is_active', true).maybeSingle();
-     
-     const { data: cards } = await supabase.from('daily_cards').select('*').eq('user_id', user.id).order('day_number', { ascending: true });
-     if (cards && cards.length > 0) {
-        console.log(`\nUser: ${user.email} (ID: ${user.id})`);
-        console.log(`Start Date: ${plan?.start_date}`);
-        for (const c of cards) {
-           if (c.status === 'done' || c.checked_states?.length > 0) {
-             console.log(`Day ${c.day_number} | Date: ${c.date} | Status: ${c.status} | Checked: ${JSON.stringify(c.checked_states)}`);
-           }
-        }
-     }
+  // Get active plan
+  const { data: plans, error: planErr } = await supabase
+    .from('plans')
+    .select('id, start_date, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+    
+  console.log('Plans:', plans);
+  if (plans && plans.length > 0) {
+    const planId = plans[0].id;
+    const { data: cards, error: cardsErr } = await supabase
+      .from('daily_cards')
+      .select('id, day_number, task, status, completed_at, revealed_at')
+      .eq('user_id', userId)
+      .eq('plan_id', planId)
+      .order('day_number', { ascending: true });
+      
+    console.log('Daily Cards for active plan:', cards);
   }
 }
 
