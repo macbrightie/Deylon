@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     // From is like "whatsapp:+1234567890", we just use the whole string or strip "whatsapp:"
     // Let's strip "whatsapp:" so we just store the number
     const chatId = from.toString().replace('whatsapp:', '');
-    const text = body.toString().trim();
+    const text = body.toString().replace(/’/g, "'").trim();
 
     // Handle /start <token> command — links Telegram to Deylon account
     if (text.startsWith('/start') || text.toLowerCase().startsWith('connect ')) {
@@ -723,10 +723,66 @@ Want to start sooner? Just say "today", "tomorrow", or give me a specific date (
         // Call daily coaching chat service
         const reply = await DailyChatService.chat(supabase, user.id, conversation.id, sprintDay);
 
+        // Check for the new explicit hidden completion sync token (e.g. [TASK_DONE: X])
+        let syncedDayNumber: number | null = null;
+        let cleanReply = reply;
+        const taskDoneMatch = reply.match(/\[TASK_DONE:\s*(\d+)\]/i);
+
+        if (taskDoneMatch) {
+          syncedDayNumber = parseInt(taskDoneMatch[1], 10);
+          cleanReply = reply.replace(/\[TASK_DONE:\s*\d+\]/gi, '').trim();
+          console.log('[Twilio Webhook] Found explicit task completion sync token for day:', syncedDayNumber);
+        }
+
+        // Check if LLM response indicates task completion verification
+        const lowerReply = reply.toLowerCase();
+        const shouldMarkDone = !!taskDoneMatch ||
+                               lowerReply.includes('task checked 100%') || 
+                               lowerReply.includes('task checked') ||
+                               lowerReply.includes("marked today's move as done") ||
+                               lowerReply.includes("marked today's moves as done") ||
+                               lowerReply.includes("marked today's task as done") ||
+                               lowerReply.includes("marked today's tasks as done") ||
+                               lowerReply.includes("marked today's move as completed") ||
+                               lowerReply.includes("marked today's task as completed");
+
+        if (shouldMarkDone) {
+          const targetDay = syncedDayNumber || sprintDay;
+          console.log('[Twilio Webhook] Syncing DB completion status for dayNumber:', targetDay);
+          // Fetch target card
+          const { data: targetCard } = await supabase
+            .from('daily_cards')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('plan_id', plan.id)
+            .eq('day_number', targetDay)
+            .maybeSingle();
+
+          if (targetCard && targetCard.status !== 'done') {
+            const taskItems = parseTasks(targetCard.task);
+            const checkedStates = Array(taskItems.length).fill(true);
+
+            const { error: updateErr } = await supabase
+              .from('daily_cards')
+              .update({
+                status: 'done',
+                completed_at: new Date().toISOString(),
+                checked_states: checkedStates
+              })
+              .eq('id', targetCard.id);
+
+            if (updateErr) {
+              console.error('[Twilio Webhook] Failed to auto-mark task as done from LLM reply:', updateErr);
+            } else {
+              console.log('[Twilio Webhook] Successfully marked task as done in DB from LLM reply for day:', targetDay);
+            }
+          }
+        }
+
         // Save Deylon's reply to the database
         const finalMessages = [
           ...updatedMessages,
-          { role: 'assistant', content: reply }
+          { role: 'assistant', content: cleanReply }
         ];
 
         await supabase
@@ -734,8 +790,8 @@ Want to start sooner? Just say "today", "tomorrow", or give me a specific date (
           .update({ messages: finalMessages })
           .eq('id', conversation.id);
 
-        // Send Deylon's response to the user via Telegram split into bubbles
-        await sendBubbleReply(chatId, reply);
+        // Send Deylon's response to the user via WhatsApp split into bubbles
+        await sendBubbleReply(chatId, cleanReply);
 
         // Run background processes concurrently
         try {
